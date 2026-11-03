@@ -1,0 +1,47 @@
+{
+  "docsRoot": "docs",
+  "requireDocsRootChange": true,
+  "surfaces": {
+    "frontend": {
+      "code": [
+        "src/**",
+        "index.html",
+        "public/**"
+      ],
+      "docs": [
+        "docs/12-ux-ui/**",
+        "docs/07-api/**",
+        "docs/14-training/**"
+      ]
+    },
+    "database": {
+      "code": [
+        "src/persistence/**"
+      ],
+      "docs": [
+        "docs/06-data/**",
+        "docs/09-microservices/**"
+      ]
+    },
+    "devops": {
+      "code": [
+        ".github/workflows/**",
+        "vite.config.ts"
+      ],
+      "docs": [
+        "docs/10-devops/**",
+        "docs/13-operations/**"
+      ]
+    }
+  },
+  "ignore": [
+    "**/*.lock",
+    "**/package-lock.json",
+    "**/pnpm-lock.yaml",
+    "**/yarn.lock",
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/*.png",
+    "**/*.svg"
+  ]
+}

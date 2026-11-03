@@ -1,17 +1,21 @@
 # Sistema de diseño
 
-Piezas del ADN actual. Una sombra dura, un radio cero o una serifa de cartel no entran.
+Piezas del ADN del mostrador. No entran la página blanca con un botón verde, el papel crema, el botón amarillo, la serifa de cartel, el borde duro ni la sombra de imprenta.
 
 | Pieza | Regla |
 |---|---|
-| Cabecera | Fondo blanco, pastilla verde «En este teléfono», título Manrope |
-| Tarjeta | Superficie blanca, radio 20 px, borde claro, sombra suave |
-| Categoría | Pastilla verde suave, sin rotación |
-| Escanear | Botón verde, alto mínimo 56 px, texto blanco |
-| Acciones de pie | Tres botones claros. Exportar se desactiva si la lista está vacía |
-| Ficha | Campos con fondo suave y radio 14 px |
-| Error | Rojo, texto en español, junto al campo |
-| Visor | Video a sangre, esquinas blancas, estado en una pastilla oscura |
-| Guardar | El mismo verde. No compite con un segundo color de marca |
+| Cabecera | Campo papaya `#ff4f30`, pastilla blanca «En este teléfono», título Bricolage Grotesque en tinta |
+| Lista vacía | Marca de código con lente, título y tres acciones en columna. El botón de escanear vive en la cabecera |
+| Lista con productos | La cabecera se acorta. Escanear pasa al pie y permanece visible |
+| Tarjeta | Superficie blanca, radio 22 px, sombra suave. El nombre es lo más grande. La categoría es una pastilla de color fijo por nombre |
+| Cantidad | Bandeja `#ffe8dc` a lo ancho: −, número, +. Cada botón mide 48 px |
+| Escanear | Cápsula de tinta, alto mínimo 64 px, texto blanco, sello papaya con icono de cámara |
+| Acciones secundarias | Escribir código, Exportar Excel y Categorías. Exportar se desactiva si la lista está vacía |
+| Ficha | Banda papaya con el código en mono. Campos blancos, radio 16 px, texto a 16 px, etiquetas en tinta |
+| Error | Fondo `#fff1f2`, texto `#9f1239` y borde del campo en el mismo rojo. El campo inválido recibe el foco |
+| Visor | Video a sangre, alrededor oscurecido, esquinas papaya, línea de lectura y estado en una pastilla oscura |
+| Guardar | Botón de tinta. Confirmar el código leído es papaya con texto de tinta |
+| Eliminar | Primero un botón rosa suave; la confirmación es rojo sólido |
+| Categorías | Una tarjeta blanca por nombre, con Guardar y Borrar a 48 px |
 
-Contraste: tinta sobre blanco y blanco sobre verde sirven para texto. El foco visible es un anillo verde. Se respeta `prefers-reduced-motion`.
+Contraste: tinta sobre papaya, blanco sobre tinta y blanco sobre el rojo de error sirven para texto. El foco visible es un anillo de tinta; en el visor es blanco. Se respeta `prefers-reduced-motion`.

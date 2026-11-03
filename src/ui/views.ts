@@ -6,17 +6,91 @@ import { CAMERA_FAILURE_COPY, type CameraFailure } from "../camera/errors";
 import { el } from "./dom";
 import { formatPrice, formatQuantity } from "./format";
 
+const TONES = ["tone-1", "tone-2", "tone-3", "tone-4", "tone-5"] as const;
+
+function toneFor(name: string): string {
+  let hash = 0;
+  for (let index = 0; index < name.length; index += 1) {
+    hash = (hash * 33 + name.charCodeAt(index)) >>> 0;
+  }
+  return TONES[hash % TONES.length] ?? "tone-1";
+}
+
 function brand(): HTMLElement {
   return el("p", { class: "brand", text: "En este teléfono" });
 }
 
-export function loadingView(): HTMLElement {
-  const screen = el("section", { class: "screen paper", attrs: { "aria-busy": "true" } }, [
-    brand(),
-    el("h1", { text: "Inventario" }),
-    el("p", { class: "lede", text: "Abriendo los productos guardados en este teléfono…" }),
+function cameraIcon(): SVGSVGElement {
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("class", "cta-icon");
+  svg.setAttribute("aria-hidden", "true");
+  const body = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  body.setAttribute("fill", "currentColor");
+  body.setAttribute(
+    "d",
+    "M4.5 9.2c0-1.2 1-2.2 2.2-2.2h1.6l.7-1.3c.2-.4.6-.7 1.1-.7h3.8c.5 0 .9.3 1.1.7l.7 1.3h1.6c1.2 0 2.2 1 2.2 2.2v7.1c0 1.2-1 2.2-2.2 2.2H6.7c-1.2 0-2.2-1-2.2-2.2V9.2z",
+  );
+  const lens = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+  lens.setAttribute("cx", "12");
+  lens.setAttribute("cy", "12.6");
+  lens.setAttribute("r", "3.1");
+  lens.setAttribute("fill", "#fff");
+  const pupil = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+  pupil.setAttribute("cx", "12");
+  pupil.setAttribute("cy", "12.6");
+  pupil.setAttribute("r", "1.35");
+  pupil.setAttribute("fill", "currentColor");
+  svg.append(body, lens, pupil);
+  return svg;
+}
+
+function scanButton(label: string, onClick: () => void): HTMLButtonElement {
+  const button = el("button", { class: "scan-cta", attrs: { type: "button" } }, [
+    el("span", { class: "cta-icon-wrap", attrs: { "aria-hidden": "true" } }, [cameraIcon()]),
+    el("span", { class: "cta-label", text: label }),
   ]);
-  return screen;
+  button.addEventListener("click", onClick);
+  return button;
+}
+
+function shelfMark(): HTMLElement {
+  const bars = ["w1", "w2", "w3", "hot", "w2", "w1", "w3"].map((kind) => el("span", { class: `bar ${kind}` }));
+  return el("div", { class: "mark", attrs: { "aria-hidden": "true" } }, [
+    ...bars,
+    el("span", { class: "lens" }),
+  ]);
+}
+
+function colorBand(back: HTMLButtonElement | null, title: string, extra?: HTMLElement): HTMLElement {
+  const copyKids: Node[] = [brand(), el("h1", { text: title })];
+  if (extra) {
+    copyKids.push(extra);
+  }
+  const kids: Node[] = [];
+  if (back) {
+    kids.push(back);
+  }
+  kids.push(el("div", { class: "subhead-copy" }, copyKids));
+  return el("header", { class: "subhead" }, kids);
+}
+
+export function loadingView(): HTMLElement {
+  return el("section", { class: "screen home is-loading", attrs: { "aria-busy": "true" } }, [
+    el("header", { class: "hero" }, [
+      brand(),
+      el("h1", { text: "Inventario" }),
+      el("p", { class: "lede", text: "Abriendo los productos guardados en este teléfono…" }),
+    ]),
+    el("div", { class: "sheet" }, [
+      el("div", { class: "tickets" }, [
+        el("article", { class: "empty-shelf" }, [
+          shelfMark(),
+          el("p", { class: "empty-kicker", text: "Un momento" }),
+        ]),
+      ]),
+    ]),
+  ]);
 }
 
 export function listView(input: {
@@ -38,11 +112,16 @@ export function listView(input: {
         ? "1 producto listo para exportar."
         : `${count} productos listos para exportar.`;
 
-  const header = el("header", { class: "mast" }, [
+  const scan = scanButton("Escanear con la cámara", input.onScan);
+  const heroKids: Node[] = [
     brand(),
     el("h1", { text: "Inventario" }),
     el("p", { class: "lede", text: summary }),
-  ]);
+  ];
+  if (count === 0) {
+    heroKids.push(scan);
+    heroKids.push(el("p", { class: "hero-note", text: "La cámara de atrás lee el código" }));
+  }
 
   const notice = input.notice
     ? el("p", { class: "banner", text: input.notice, attrs: { role: "status" } })
@@ -52,9 +131,11 @@ export function listView(input: {
   if (count === 0) {
     list.append(
       el("article", { class: "empty-shelf" }, [
+        shelfMark(),
         el("p", { class: "empty-kicker", text: "Sin productos" }),
         el("h2", { text: "Escanea el primer código" }),
         el("p", {
+          class: "empty-copy",
           text: "Apunta con la cámara de atrás. Si no se lee, escríbelo. Todo queda en este teléfono.",
         }),
       ]),
@@ -65,13 +146,6 @@ export function listView(input: {
       list.append(ticket(product, input.categories, input.onEdit, input.onBump));
     }
   }
-
-  const scan = el("button", {
-    class: "scan-cta",
-    text: "Escanear con la cámara",
-    attrs: { type: "button" },
-  });
-  scan.addEventListener("click", input.onScan);
 
   const manual = el("button", {
     class: "dock-link",
@@ -98,13 +172,17 @@ export function listView(input: {
   });
   categories.addEventListener("click", input.onCategories);
 
-  const dock = el("footer", { class: "dock" }, [
-    el("p", { class: "dock-note", text: "La cámara de atrás lee el código" }),
-    scan,
-    el("div", { class: "dock-links" }, [manual, exportButton, categories]),
-  ]);
+  const dockKids: Node[] = [];
+  if (count > 0) {
+    dockKids.push(el("p", { class: "dock-note", text: "La cámara de atrás lee el código" }));
+    dockKids.push(scan);
+  }
+  dockKids.push(el("div", { class: "dock-links" }, [manual, exportButton, categories]));
 
-  return el("section", { class: "screen" }, [header, notice, list, dock]);
+  return el("section", { class: count === 0 ? "screen home is-empty" : "screen home has-items" }, [
+    el("header", { class: "hero" }, heroKids),
+    el("div", { class: "sheet" }, [notice, list, el("footer", { class: "dock" }, dockKids)]),
+  ]);
 }
 
 function ticket(
@@ -113,13 +191,16 @@ function ticket(
   onEdit: (id: string) => void,
   onBump: (id: string, delta: number) => void,
 ): HTMLElement {
+  const category = categoryName(categories, product.categoryId);
   const open = el("button", {
     class: "ticket-open",
     attrs: { type: "button", "aria-label": `Editar ${describeProduct(product, categories)}` },
   }, [
+    el("span", { class: "ticket-top" }, [
+      el("strong", { class: "ticket-name", text: product.name }),
+      el("span", { class: `stamp ${toneFor(category)}`, text: category }),
+    ]),
     el("span", { class: "barcode", text: product.barcode }),
-    el("span", { class: "stamp", text: categoryName(categories, product.categoryId) }),
-    el("strong", { class: "ticket-name", text: product.name }),
     el("span", {
       class: "ticket-meta",
       text: product.price === null ? product.unit : `${product.unit} · ${formatPrice(product.price)}`,
@@ -127,8 +208,16 @@ function ticket(
   ]);
   open.addEventListener("click", () => onEdit(product.id));
 
-  const minus = el("button", { class: "step", text: "−", attrs: { type: "button", "aria-label": `Disminuir cantidad de ${product.name}` } });
-  const plus = el("button", { class: "step", text: "+", attrs: { type: "button", "aria-label": `Aumentar cantidad de ${product.name}` } });
+  const minus = el("button", {
+    class: "step",
+    text: "−",
+    attrs: { type: "button", "aria-label": `Disminuir cantidad de ${product.name}` },
+  });
+  const plus = el("button", {
+    class: "step",
+    text: "+",
+    attrs: { type: "button", "aria-label": `Aumentar cantidad de ${product.name}` },
+  });
   minus.addEventListener("click", () => onBump(product.id, -1));
   plus.addEventListener("click", () => onBump(product.id, 1));
 
@@ -171,6 +260,7 @@ export function scanView(input: {
     el("span", { class: "corner c2" }),
     el("span", { class: "corner c3" }),
     el("span", { class: "corner c4" }),
+    el("span", { class: "beam" }),
   ]);
 
   const finder = el("div", { class: "viewfinder" }, [
@@ -206,7 +296,7 @@ export function scanView(input: {
 }
 
 export function detectedCard(barcode: string, formatLabel: string, onUse: () => void, onResume: () => void): HTMLElement {
-  const use = el("button", { class: "ink-btn", text: "Usar este código", attrs: { type: "button" } });
+  const use = el("button", { class: "ink-btn use-code", text: "Usar este código", attrs: { type: "button" } });
   const resume = el("button", { class: "ghost", text: "Seguir escaneando", attrs: { type: "button" } });
   use.addEventListener("click", onUse);
   resume.addEventListener("click", onResume);
@@ -237,6 +327,10 @@ export function manualView(input: {
     },
   });
   field.value = input.barcode;
+  if (input.error) {
+    field.setAttribute("aria-invalid", "true");
+    queueMicrotask(() => field.focus());
+  }
   const form = el("form", { class: "ficha" });
   form.append(
     el("label", { attrs: { for: "manual-barcode" }, text: "Código de barras" }),
@@ -254,11 +348,10 @@ export function manualView(input: {
   const scan = el("button", { class: "ghost dark", text: "Usar la cámara", attrs: { type: "button" } });
   scan.addEventListener("click", input.onScan);
 
-  return el("section", { class: "screen paper" }, [
-    el("header", { class: "subhead" }, [back, brand()]),
-    el("h1", { text: "Escribir código" }),
+  return el("section", { class: "screen form-screen" }, [
+    colorBand(back, "Escribir código"),
     el("p", {
-      class: "lede",
+      class: "intro",
       text: "Respaldo si la cámara no lee. El flujo principal sigue siendo la cámara trasera.",
     }),
     form,
@@ -284,8 +377,11 @@ export function formView(input: {
   const price = textInput("price", "Precio unitario (opcional)", input.draft.price, input.errors.price, "decimal");
   const notes = el("textarea", { attrs: { id: "notes", name: "notes", rows: "3", "aria-describedby": "err-notes" } });
   notes.value = input.draft.notes;
+  if (input.errors.notes) {
+    notes.setAttribute("aria-invalid", "true");
+  }
 
-  const unit = el("select", { attrs: { id: "unit", name: "unit" } });
+  const unit = el("select", { attrs: { id: "unit", name: "unit", "aria-describedby": "err-unit" } });
   for (const optionUnit of UNITS) {
     const option = el("option", { text: optionUnit, attrs: { value: optionUnit } });
     if (optionUnit === input.draft.unit) {
@@ -293,14 +389,20 @@ export function formView(input: {
     }
     unit.append(option);
   }
+  if (input.errors.unit) {
+    unit.setAttribute("aria-invalid", "true");
+  }
 
-  const category = el("select", { attrs: { id: "categoryId", name: "categoryId" } });
+  const category = el("select", { attrs: { id: "categoryId", name: "categoryId", "aria-describedby": "err-category" } });
   for (const item of input.categories) {
     const option = el("option", { text: item.name, attrs: { value: item.id } });
     if (item.id === input.draft.categoryId) {
       option.selected = true;
     }
     category.append(option);
+  }
+  if (input.errors.categoryId) {
+    category.setAttribute("aria-invalid", "true");
   }
 
   const form = el("form", { class: "ficha" });
@@ -345,13 +447,17 @@ export function formView(input: {
     });
   });
 
+  if (input.errors.name || input.errors.barcode || input.errors.quantity || input.errors.price) {
+    queueMicrotask(() => {
+      form.querySelector<HTMLElement>("[aria-invalid='true']")?.focus();
+    });
+  }
+
   const back = el("button", { class: "ghost", text: "Volver", attrs: { type: "button" } });
   back.addEventListener("click", input.onClose);
 
-  const screen = el("section", { class: "screen paper" }, [
-    el("header", { class: "subhead" }, [back, brand()]),
-    el("h1", { text: input.title }),
-    el("p", { class: "lede barcode", text: input.draft.barcode || "Sin código" }),
+  const screen = el("section", { class: "screen form-screen" }, [
+    colorBand(back, input.title, el("p", { class: "code-chip", text: input.draft.barcode || "Sin código" })),
     form,
   ]);
 
@@ -361,7 +467,7 @@ export function formView(input: {
       confirm.addEventListener("click", input.onDelete);
       screen.append(confirm);
     } else {
-      const ask = el("button", { class: "ghost dark", text: "Eliminar producto", attrs: { type: "button" } });
+      const ask = el("button", { class: "ghost dark danger-quiet", text: "Eliminar producto", attrs: { type: "button" } });
       ask.addEventListener("click", input.onAskDelete);
       screen.append(ask);
     }
@@ -387,6 +493,9 @@ function textInput(
     },
   });
   input.value = value;
+  if (error) {
+    input.setAttribute("aria-invalid", "true");
+  }
   return {
     label: el("label", { attrs: { for: name }, text: label }),
     input,
@@ -413,11 +522,14 @@ export function categoriesView(input: {
       attrs: { "aria-label": `Nombre de ${category.name}`, value: input.drafts[category.id] ?? category.name },
     });
     field.value = input.drafts[category.id] ?? category.name;
-    const save = el("button", { class: "step", text: "Guardar", attrs: { type: "button" } });
+    const save = el("button", { class: "save-btn", text: "Guardar", attrs: { type: "button" } });
     save.addEventListener("click", () => input.onRename(category.id, field.value));
-    const remove = el("button", { class: "step danger", text: "Borrar", attrs: { type: "button" } });
+    const remove = el("button", { class: "delete-btn", text: "Borrar", attrs: { type: "button" } });
     remove.addEventListener("click", () => input.onDelete(category.id));
-    list.append(el("div", { class: "category-row" }, [field, save, remove]));
+    list.append(el("div", { class: "category-row" }, [
+      field,
+      el("div", { class: "row-actions" }, [save, remove]),
+    ]));
   }
 
   const createField = el("input", {
@@ -427,10 +539,12 @@ export function categoriesView(input: {
   const create = el("button", { class: "ink-btn", text: "Agregar categoría", attrs: { type: "button" } });
   create.addEventListener("click", () => input.onCreate(createField.value));
 
-  return el("section", { class: "screen paper" }, [
-    el("header", { class: "subhead" }, [back, brand()]),
-    el("h1", { text: "Categorías" }),
-    el("p", { class: "lede", text: "Abarrotes, Bebidas, Limpieza y Otros vienen de inicio. Puedes renombrarlas o crear otras." }),
+  return el("section", { class: "screen form-screen" }, [
+    colorBand(back, "Categorías"),
+    el("p", {
+      class: "intro",
+      text: "Abarrotes, Bebidas, Limpieza y Otros vienen de inicio. Puedes renombrarlas o crear otras.",
+    }),
     el("p", { class: "field-error", text: input.error, attrs: { role: "alert" } }),
     list,
     el("div", { class: "category-create" }, [

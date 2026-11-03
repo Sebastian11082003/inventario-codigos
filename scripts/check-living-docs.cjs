@@ -5,9 +5,8 @@
  * el mismo entregable debe actualizar los documentos mapeados.
  *
  * Uso:
- *   node scripts/check-living-docs.js
- *   LIVING_DOCS_CONFIG=apps/inventario-codigos/.living-docs.json node scripts/check-living-docs.js
- *   BASE_SHA=<sha> HEAD_SHA=<sha> node scripts/check-living-docs.js
+ *   node scripts/check-living-docs.cjs
+ *   BASE_SHA=<sha> HEAD_SHA=<sha> node scripts/check-living-docs.cjs
  */
 
 const { execFileSync } = require("node:child_process");

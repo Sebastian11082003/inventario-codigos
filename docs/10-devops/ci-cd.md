@@ -4,7 +4,7 @@
 
 El workflow `CI` del repositorio:
 
-- corre la documentación viva con `.living-docs.json` de la raíz;
+- corre la documentación viva con `.living-docs.json` de la raíz, mediante `scripts/check-living-docs.cjs` (CommonJS, porque el paquete es ESM);
 - en el job **Pruebas y build** ejecuta `npm ci`, `npm test` y `npm run build`.
 
 ## Publicación

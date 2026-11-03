@@ -20,7 +20,7 @@ jobs:
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
           HEAD_SHA: ${{ github.sha }}
-        run: node scripts/check-living-docs.js
+        run: node scripts/check-living-docs.cjs
 
   test:
     name: Pruebas y build

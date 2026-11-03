@@ -189,14 +189,9 @@ function decodeAt(runs: readonly Run[], start: number): EanHit | null {
   if (first < 0 || !end) {
     return null;
   }
-  const before = start > 0 ? runs[start - 1] : undefined;
-  if (before && (before.black || before.width < module * 2.5)) {
-    return null;
-  }
-  const after = runs[cursor + 3];
-  if (after && (after.black || after.width < module * 2.5)) {
-    return null;
-  }
+  // Una etiqueta roja deja poco blanco junto a las barras, o el rojo queda
+  // pegado a la guarda. Eso no anula un código: el tope de error por dígito
+  // y este presupuesto total siguen cerrando el paso al ruido.
   if (error > 12) {
     return null;
   }

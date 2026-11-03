@@ -13,7 +13,7 @@ El escaneo tiene que usar la cámara del propio teléfono, la de atrás, en Chro
 
 ## Decisión
 
-**Decidimos:** al pulsar **Escanear con la cámara**, la app llama a `navigator.mediaDevices.getUserMedia` con `video.facingMode: "environment"` y `audio: false`. ZXing decodifica el video en el teléfono, limitado a EAN-13, EAN-8, UPC-A, Code 128, Code 39 y QR. Escribir el código es un control secundario. No hay lector de hardware ni un modo de webcam de escritorio.
+**Decidimos:** al pulsar **Escanear con la cámara**, la app llama a `navigator.mediaDevices.getUserMedia` con `video.facingMode: "environment"` y `audio: false`. El fotograma se copia entero con `drawImage(video, 0, 0)` al tamaño real del video. Un lector de filas EAN-13 recorre arriba, centro y abajo, y también el eje girado 90°. ZXing (`TRY_HARDER`, binarizado híbrido e histograma) corre sobre la franja con más contraste de barras. Si el navegador tiene `BarcodeDetector`, se consulta el video y el lienzo; si no devuelve nada, siguen los otros. Los formatos siguen siendo EAN-13, EAN-8, UPC-A, Code 128, Code 39 y QR. Hacen falta dos lecturas iguales y, en los códigos de retail, el dígito GS1. Escribir el código es un control secundario. No hay lector de hardware ni un modo de webcam de escritorio.
 
 **Justificación:** `facingMode: "environment"` es la forma compatible de pedir la cámara trasera en un solo gesto. `exact` falla en aparatos con una sola cámara y puede exigir una segunda llamada fuera del gesto de Safari. La cadena sigue siendo la trasera. Si el navegador solo tiene una cámara, puede entregarla; no ofrecemos un botón para cambiar a la frontal.
 
@@ -23,7 +23,8 @@ El escaneo tiene que usar la cámara del propio teléfono, la de atrás, en Chro
 |---|---|
 | Lector USB o Bluetooth | El pedido lo excluye |
 | Webcam de escritorio como camino principal | No es el teléfono en el pasillo |
-| `BarcodeDetector` solamente | Safari no lo ofrece de forma pareja. ZXing cubre los dos navegadores sobre el mismo video |
+| `BarcodeDetector` solamente | Safari no lo ofrece de forma pareja. ZXing y el lector de filas cubren los dos navegadores sobre el mismo video |
+| Recortar el video con un rectángulo de origen en `drawImage` | En este iPhone esa copia sale en blanco o toma otra zona del sensor. El visor se queda en «Mantén el código quieto.» |
 
 ## Consecuencias
 

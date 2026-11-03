@@ -44,3 +44,26 @@ export function centerBandRect(
 ): SourceRect | null {
   return coverSourceRect(videoWidth, videoHeight, viewWidth, viewHeight, 0.16, 0.34);
 }
+
+/**
+ * Franja ancha alrededor de una fila o una columna del fotograma completo.
+ * Sigue al código si está arriba o abajo; no se queda en una sola banda central.
+ */
+export function bandAroundLine(
+  width: number,
+  height: number,
+  axis: "row" | "column",
+  at: number,
+): SourceRect | null {
+  if (width < 2 || height < 2) {
+    return null;
+  }
+  if (axis === "row") {
+    const sh = Math.max(2, Math.min(height, Math.round(height * 0.32)));
+    const sy = Math.max(0, Math.min(height - sh, Math.round(at - sh / 2)));
+    return { sx: 0, sy, sw: width, sh };
+  }
+  const sw = Math.max(2, Math.min(width, Math.round(width * 0.32)));
+  const sx = Math.max(0, Math.min(width - sw, Math.round(at - sw / 2)));
+  return { sx, sy: 0, sw, sh: height };
+}

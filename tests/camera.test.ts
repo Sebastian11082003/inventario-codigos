@@ -2,8 +2,9 @@ import { describe, expect, it } from "vitest";
 import { REAR_CAMERA_CONSTRAINTS } from "../src/camera/constraints";
 import { readEan13 } from "../src/camera/ean";
 import { CAMERA_FAILURE_COPY, classifyCameraFailure } from "../src/camera/errors";
-import { centerBandRect, coverSourceRect } from "../src/camera/frame";
+import { bandAroundLine, centerBandRect, coverSourceRect } from "../src/camera/frame";
 import { SUPPORTED_FORMAT_LABELS } from "../src/camera/formats";
+import { decoderAttempts, decoderPixelSize, indexAt, inspectFrame, scanFractions, sliceBand, thickenSamples } from "../src/camera/pixels";
 import { advanceStreak, hasValidGs1CheckDigit, wideEnough } from "../src/camera/stability";
 import { trackSupportsTorch } from "../src/camera/torch";
 import { preferredZoom } from "../src/camera/zoom";
@@ -84,8 +85,64 @@ describe("cámara trasera", () => {
     expect(readEan13(sharp)?.code).toBe("7702535011089");
     expect(readEan13(soft)?.code).toBe("7702535011089");
     expect(readEan13([...sharp].reverse())?.code).toBe("7702535011089");
+    expect(readEan13(thickenSamples(sharp))?.code).toBe("7702535011089");
     expect(readEan13(renderEan("4006381333931"))?.code).toBe("4006381333931");
     expect(readEan13(new Array(400).fill(200))).toBeNull();
+  });
+
+  it("acepta la etiqueta roja con margen blanco corto y rechaza ruido o un dígito mal", () => {
+    expect(readEan13(renderEan("7702535011089", 4, 0, 2, 42))?.code).toBe("7702535011089");
+    expect(readEan13(renderEan("7702535011089", 4, 0, 1, 42))?.code).toBe("7702535011089");
+    expect(readEan13(renderEan("7702535011088", 4, 0, 2, 42))).toBeNull();
+    for (const seed of [1, 2, 3, 9, 42]) {
+      expect(readEan13(noiseRow(seed, 720))).toBeNull();
+    }
+  });
+
+  it("busca el código arriba, abajo y de lado, no solo en una franja central", () => {
+    const fractions = scanFractions();
+    expect(fractions.some((value) => value < 0.2)).toBe(true);
+    expect(fractions.some((value) => value > 0.8)).toBe(true);
+    const bar = renderEan("7702535011089", 3, 0, 4);
+    const height = 240;
+    const width = Math.max(bar.length + 80, 640);
+    const upper = indexAt(height, fractions[0]);
+    const lower = indexAt(height, fractions[fractions.length - 1]);
+    expect(inspectFrame(frameWithRow(width, height, upper, bar), width, height).code).toBe("7702535011089");
+    expect(inspectFrame(frameWithRow(width, height, lower, bar), width, height).code).toBe("7702535011089");
+
+    const sideways = renderEan("7702535011089", 3, 0, 4);
+    const tall = sideways.length + 60;
+    const narrow = 160;
+    const column = indexAt(narrow, fractions[Math.floor(fractions.length / 2)]);
+    const turned = frameWithColumn(narrow, tall, column, sideways);
+    expect(inspectFrame(turned, narrow, tall).code).toBe("7702535011089");
+    const strip = sliceBand(turned, narrow, tall, { sx: column, sy: 0, sw: 1, sh: tall }, "column");
+    expect(strip).not.toBeNull();
+    const flat = rowFrom(strip!.data, strip!.width, 0);
+    expect(readEan13(thickenSamples(flat))?.code).toBe("7702535011089");
+
+    const upperBand = bandAroundLine(800, 1000, "row", 20);
+    const lowerBand = bandAroundLine(800, 1000, "row", 980);
+    expect(upperBand!.sy).toBe(0);
+    expect(lowerBand!.sy + lowerBand!.sh).toBe(1000);
+    expect(lowerBand!.sy).toBeGreaterThan(upperBand!.sy + upperBand!.sh);
+    const attempts = decoderAttempts(800, 1000, { axis: "row", at: 980, score: 40 });
+    expect(attempts[0]?.axis).toBe("row");
+    expect(attempts[0]?.band.sy).toBeGreaterThan(500);
+    expect(attempts.some((attempt) => attempt.band.sh === 1000)).toBe(true);
+    expect(decoderAttempts(800, 1000, { axis: "column", at: 100, score: 30 })[0]?.axis).toBe("column");
+  });
+
+  it("no confirma un código válido si ocupa una astilla del fotograma", () => {
+    const bar = renderEan("7702535011089", 2, 0, 6);
+    const width = bar.length * 20;
+    const y = indexAt(48, scanFractions()[4]);
+    expect(inspectFrame(frameWithRow(width, 48, y, bar), width, 48).code).toBeNull();
+    const sized = decoderPixelSize(480, 160);
+    expect(sized.width).toBeGreaterThan(480);
+    expect(Math.max(sized.width, sized.height)).toBeLessThanOrEqual(1800);
+    expect(Math.max(...Object.values(decoderPixelSize(2400, 400)))).toBeLessThanOrEqual(1800);
   });
 });
 
@@ -93,7 +150,7 @@ const LEFT_BITS = ["0001101", "0011001", "0010011", "0111101", "0100011", "01100
 const EVEN_BITS = ["0100111", "0110011", "0011011", "0100001", "0011101", "0111001", "0000101", "0010001", "0001001", "0010111"];
 const PARITY = ["LLLLLL", "LLGLGG", "LLGGLG", "LLGGGL", "LGLLGG", "LGGLLG", "LGGGLL", "LGLGLG", "LGLGGL", "LGGLGL"];
 
-function renderEan(code: string, module = 4, blur = 0): number[] {
+function renderEan(code: string, module = 4, blur = 0, quietModules = 12, surround = 70): number[] {
   const parity = PARITY[Number(code[0])] ?? "LLLLLL";
   let bits = "101";
   for (let index = 0; index < 6; index += 1) {
@@ -112,12 +169,13 @@ function renderEan(code: string, module = 4, blur = 0): number[] {
       row.push(value);
     }
   };
-  paint(230, 12 * module);
+  paint(236, Math.max(0, quietModules) * module);
   for (const bit of bits) {
     paint(bit === "1" ? 16 : 244, module);
   }
-  paint(230, 12 * module);
-  const framed = [70, 70, 70, 70, ...row, 60, 60, 60, 60];
+  paint(236, Math.max(0, quietModules) * module);
+  const edge = Math.max(4, module);
+  const framed = [...new Array<number>(edge).fill(surround), ...row, ...new Array<number>(edge).fill(surround)];
   if (blur <= 0) {
     return framed;
   }
@@ -133,4 +191,60 @@ function renderEan(code: string, module = 4, blur = 0): number[] {
     }
     return sum / count;
   });
+}
+
+function noiseRow(seed: number, length: number): number[] {
+  let state = seed >>> 0;
+  const row = new Array<number>(length);
+  for (let index = 0; index < length; index += 1) {
+    state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+    row[index] = state % 256;
+  }
+  return row;
+}
+
+function blankFrame(width: number, height: number, gray = 150): Uint8ClampedArray {
+  const data = new Uint8ClampedArray(width * height * 4);
+  for (let index = 0; index < data.length; index += 4) {
+    data[index] = gray;
+    data[index + 1] = gray;
+    data[index + 2] = gray;
+    data[index + 3] = 255;
+  }
+  return data;
+}
+
+function frameWithRow(width: number, height: number, y: number, samples: number[]): Uint8ClampedArray {
+  const data = blankFrame(width, height);
+  const x0 = Math.max(0, Math.floor((width - samples.length) / 2));
+  for (let x = 0; x < samples.length && x0 + x < width; x += 1) {
+    const value = Math.max(0, Math.min(255, Math.round(samples[x] ?? 150)));
+    const offset = (y * width + x0 + x) * 4;
+    data[offset] = value;
+    data[offset + 1] = value;
+    data[offset + 2] = value;
+  }
+  return data;
+}
+
+function frameWithColumn(width: number, height: number, x: number, samples: number[]): Uint8ClampedArray {
+  const data = blankFrame(width, height);
+  const y0 = Math.max(0, Math.floor((height - samples.length) / 2));
+  for (let y = 0; y < samples.length && y0 + y < height; y += 1) {
+    const value = Math.max(0, Math.min(255, Math.round(samples[y] ?? 150)));
+    const offset = ((y0 + y) * width + x) * 4;
+    data[offset] = value;
+    data[offset + 1] = value;
+    data[offset + 2] = value;
+  }
+  return data;
+}
+
+function rowFrom(data: Uint8ClampedArray, width: number, y: number): number[] {
+  const row = new Array<number>(width);
+  for (let x = 0; x < width; x += 1) {
+    const offset = (y * width + x) * 4;
+    row[x] = data[offset] * 0.299 + data[offset + 1] * 0.587 + data[offset + 2] * 0.114;
+  }
+  return row;
 }

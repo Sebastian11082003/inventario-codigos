@@ -5,7 +5,7 @@ sequenceDiagram
   actor Op as Operador
   participant UI as Interfaz
   participant Cam as Cámara del teléfono
-  participant Dec as ZXing
+  participant Dec as Lector del fotograma
   participant DB as IndexedDB
   Op->>UI: Pulsa Escanear con la cámara
   alt Sin HTTPS ni localhost
@@ -17,7 +17,7 @@ sequenceDiagram
       UI-->>Op: Mensaje del caso y respaldo manual
     else Stream listo
       Cam-->>Dec: Video
-      Dec-->>UI: Texto del código
+      Dec-->>UI: Texto del código, al segundo acuerdo
       Op->>UI: Usar este código
       UI-->>Op: Ficha
       Op->>UI: Guardar

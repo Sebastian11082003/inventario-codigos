@@ -10,10 +10,16 @@ import {
 } from "@zxing/library";
 import { acceptScannedCode } from "../domain/products";
 import { REAR_CAMERA_CONSTRAINTS } from "./constraints";
-import { readEan13 } from "./ean";
 import { classifyCameraFailure, type CameraFailure } from "./errors";
-import { centerBandRect, coverSourceRect, type SourceRect } from "./frame";
 import type { SupportedFormatLabel } from "./formats";
+import {
+  decoderAttempts,
+  decoderPixelSize,
+  hasContrast,
+  inspectFrame,
+  sliceBand,
+  type PixelImage,
+} from "./pixels";
 import { sharpenRGBA } from "./sharpen";
 import { advanceStreak, hasValidGs1CheckDigit, wideEnough, type ReadStreak } from "./stability";
 import { applyTorch, trackSupportsTorch, type TorchCapabilities } from "./torch";
@@ -119,77 +125,66 @@ export async function openRearCamera(): Promise<MediaStream> {
     try {
       await track.applyConstraints({ advanced: [{ zoom } as MediaTrackConstraintSet] });
     } catch {
-      // Si el teléfono no deja acercar, la lectura sigue con el recorte ampliado.
+      // Si el teléfono no deja acercar, la lectura sigue con el fotograma completo.
     }
   }
   return stream;
 }
 
-const ROW_FRACTIONS = [0.32, 0.42, 0.5, 0.58, 0.68];
-
 function labelFor(result: Result): SupportedFormatLabel | null {
   return FORMAT_LABELS.get(result.getBarcodeFormat()) ?? null;
 }
 
-function clampRect(rect: SourceRect, width: number, height: number): SourceRect {
-  const sx = Math.max(0, Math.min(width - 2, Math.round(rect.sx)));
-  const sy = Math.max(0, Math.min(height - 2, Math.round(rect.sy)));
-  const sw = Math.max(2, Math.min(width - sx, Math.round(rect.sw)));
-  const sh = Math.max(2, Math.min(height - sy, Math.round(rect.sh)));
-  return { sx, sy, sw, sh };
-}
-
-function hasContrast(data: Uint8ClampedArray): boolean {
-  let min = 255;
-  let max = 0;
-  for (let index = 0; index < data.length; index += 64) {
-    const luminance = data[index];
-    if (luminance < min) {
-      min = luminance;
-    }
-    if (luminance > max) {
-      max = luminance;
-    }
-  }
-  return max - min >= 18;
-}
-
-function paintVideo(video: HTMLVideoElement, full: HTMLCanvasElement, fullContext: CanvasRenderingContext2D): boolean {
-  const videoWidth = video.videoWidth;
-  const videoHeight = video.videoHeight;
-  if (videoWidth < 2 || videoHeight < 2) {
+/**
+ * Copia el video como lo hacía la lectura que sí veía píxeles en este iPhone:
+ * lienzo al tamaño real y `drawImage(video, 0, 0)`, sin recortar el video.
+ */
+function paintNativeFrame(video: HTMLVideoElement, canvas: HTMLCanvasElement, context: CanvasRenderingContext2D): boolean {
+  const width = video.videoWidth;
+  const height = video.videoHeight;
+  if (width < 2 || height < 2) {
     return false;
   }
-  const scale = Math.min(1, 1920 / Math.max(videoWidth, videoHeight));
-  const width = Math.max(2, Math.round(videoWidth * scale));
-  const height = Math.max(2, Math.round(videoHeight * scale));
-  if (full.width !== width) {
-    full.width = width;
+  if (canvas.width !== width || canvas.height !== height) {
+    canvas.width = width;
+    canvas.height = height;
   }
-  if (full.height !== height) {
-    full.height = height;
-  }
-  fullContext.imageSmoothingEnabled = true;
-  fullContext.drawImage(video, 0, 0, width, height);
+  context.drawImage(video, 0, 0);
   return true;
 }
 
-function readRetailRow(image: ImageData): string | null {
-  const { data, width, height } = image;
-  for (const fraction of ROW_FRACTIONS) {
-    const y = Math.min(height - 1, Math.max(0, Math.round(height * fraction)));
-    const row = new Array<number>(width);
-    const offset = y * width * 4;
-    for (let x = 0; x < width; x += 1) {
-      const index = offset + x * 4;
-      row[x] = data[index] * 0.299 + data[index + 1] * 0.587 + data[index + 2] * 0.114;
-    }
-    const hit = readEan13(row);
-    if (hit && wideEnough([hit.start, hit.end], width)) {
-      return hit.code;
-    }
+function blitForDecoder(
+  pixels: PixelImage,
+  scratch: HTMLCanvasElement,
+  scratchContext: CanvasRenderingContext2D,
+  canvas: HTMLCanvasElement,
+  context: CanvasRenderingContext2D,
+): boolean {
+  if (pixels.width < 2 || pixels.height < 2) {
+    return false;
   }
-  return null;
+  scratch.width = pixels.width;
+  scratch.height = pixels.height;
+  const source = scratchContext.createImageData(pixels.width, pixels.height);
+  source.data.set(pixels.data);
+  scratchContext.putImageData(source, 0, 0);
+  const size = decoderPixelSize(pixels.width, pixels.height);
+  canvas.width = size.width;
+  canvas.height = size.height;
+  context.imageSmoothingEnabled = false;
+  context.drawImage(scratch, 0, 0, canvas.width, canvas.height);
+  let image: ImageData;
+  try {
+    image = context.getImageData(0, 0, canvas.width, canvas.height);
+  } catch {
+    return false;
+  }
+  if (!hasContrast(image.data)) {
+    return false;
+  }
+  sharpenRGBA(image.data, canvas.width, canvas.height);
+  context.putImageData(image, 0, 0);
+  return true;
 }
 
 function decodeCanvas(reader: MultiFormatReader, canvas: HTMLCanvasElement): Result | null {
@@ -247,14 +242,17 @@ export async function startRearCameraScan(
 
   const reader = createReader();
   let detector = createNativeDetector();
+  let detectVideo = Boolean(detector);
+  let detectCanvas = Boolean(detector);
   const full = document.createElement("canvas");
   const fullContext = full.getContext("2d", { willReadFrequently: true });
+  const scratch = document.createElement("canvas");
+  const scratchContext = scratch.getContext("2d", { willReadFrequently: true });
   const canvas = document.createElement("canvas");
   const context = canvas.getContext("2d", { willReadFrequently: true });
   let latched = false;
   let stopped = false;
   let streak: ReadStreak | null = null;
-  let pass = 0;
 
   const consider = (barcode: string, formatLabel: string) => {
     if (stopped || latched) {
@@ -270,56 +268,88 @@ export async function startRearCameraScan(
     onCode({ barcode, formatLabel });
   };
 
+  const detectNative = async (source: CanvasImageSource, sourceWidth: number, kind: "video" | "canvas") => {
+    if (!detector || (kind === "video" ? !detectVideo : !detectCanvas)) {
+      return null;
+    }
+    try {
+      const found = await detector.detect(source);
+      const ranked = [...found].sort((left, right) => (right.boundingBox?.width ?? 0) - (left.boundingBox?.width ?? 0));
+      for (const hit of ranked) {
+        if (!hit.rawValue || !hit.format) {
+          continue;
+        }
+        const formatLabel = NATIVE_LABELS[hit.format];
+        const barcode = formatLabel ? acceptRetail(hit.rawValue, formatLabel) : null;
+        if (!barcode || !formatLabel) {
+          continue;
+        }
+        const boxWidth = hit.boundingBox?.width ?? 0;
+        const origin = hit.boundingBox?.x ?? 0;
+        const broadEnough =
+          formatLabel === "QR" || boxWidth <= 0 || sourceWidth <= 0 || wideEnough([origin, origin + boxWidth], sourceWidth, 0.08);
+        if (broadEnough) {
+          return { barcode, formatLabel };
+        }
+      }
+      return null;
+    } catch {
+      if (kind === "video") {
+        detectVideo = false;
+      } else {
+        detectCanvas = false;
+      }
+      return null;
+    }
+  };
+
   const readFrame = async () => {
-    if (stopped || latched || !context || !fullContext || video.readyState < 2) {
-      return;
-    }
-    if (!paintVideo(video, full, fullContext)) {
-      return;
-    }
-    const viewWidth = video.clientWidth || full.width;
-    const viewHeight = video.clientHeight || full.height;
-    pass += 1;
-    const region = (pass % 2 === 0 ? centerBandRect : coverSourceRect)(full.width, full.height, viewWidth, viewHeight);
-    if (!region) {
-      return;
-    }
-    const source = clampRect(region, full.width, full.height);
-    canvas.width = Math.min(1700, Math.max(1200, Math.round(source.sw * 2)));
-    canvas.height = Math.max(1, Math.round(canvas.width * (source.sh / source.sw)));
-    context.imageSmoothingEnabled = true;
-    context.drawImage(full, source.sx, source.sy, source.sw, source.sh, 0, 0, canvas.width, canvas.height);
-    const image = context.getImageData(0, 0, canvas.width, canvas.height);
-    if (!hasContrast(image.data)) {
-      return;
-    }
-    sharpenRGBA(image.data, canvas.width, canvas.height);
-    context.putImageData(image, 0, 0);
-
-    const retail = readRetailRow(image);
-    if (retail) {
-      consider(retail, "EAN-13");
+    if (stopped || latched || !fullContext || !scratchContext || !context || video.readyState < 2) {
       return;
     }
 
-    if (detector) {
+    let prepared = false;
+    if (paintNativeFrame(video, full, fullContext)) {
       try {
-        const found = await detector.detect(canvas);
-        const best = [...found].sort((left, right) => (right.boundingBox?.width ?? 0) - (left.boundingBox?.width ?? 0))[0];
-        if (best?.rawValue && best.format) {
-          const formatLabel = NATIVE_LABELS[best.format];
-          const barcode = formatLabel ? acceptRetail(best.rawValue, formatLabel) : null;
-          const boxWidth = best.boundingBox?.width ?? 0;
-          const broadEnough =
-            formatLabel === "QR" || boxWidth <= 0 || wideEnough([best.boundingBox?.x ?? 0, (best.boundingBox?.x ?? 0) + boxWidth], canvas.width);
-          if (barcode && formatLabel && broadEnough) {
-            consider(barcode, formatLabel);
+        const image = fullContext.getImageData(0, 0, full.width, full.height);
+        if (hasContrast(image.data)) {
+          const look = inspectFrame(image.data, full.width, full.height);
+          if (look.code) {
+            consider(look.code, "EAN-13");
             return;
+          }
+          for (const attempt of decoderAttempts(full.width, full.height, look.best)) {
+            const slice = sliceBand(image.data, full.width, full.height, attempt.band, attempt.axis);
+            if (slice && blitForDecoder(slice, scratch, scratchContext, canvas, context)) {
+              prepared = true;
+              break;
+            }
           }
         }
       } catch {
-        detector = null;
+        prepared = false;
       }
+    }
+
+    const fromVideo = await detectNative(video, video.videoWidth || full.width, "video");
+    if (fromVideo) {
+      consider(fromVideo.barcode, fromVideo.formatLabel);
+      return;
+    }
+    if (!prepared) {
+      if (full.width > 2) {
+        const fromFull = await detectNative(full, full.width, "canvas");
+        if (fromFull) {
+          consider(fromFull.barcode, fromFull.formatLabel);
+        }
+      }
+      return;
+    }
+
+    const fromCanvas = await detectNative(canvas, canvas.width, "canvas");
+    if (fromCanvas) {
+      consider(fromCanvas.barcode, fromCanvas.formatLabel);
+      return;
     }
 
     const result = decodeCanvas(reader, canvas);
@@ -335,7 +365,7 @@ export async function startRearCameraScan(
       return;
     }
     const points = result.getResultPoints() ?? [];
-    if (formatLabel !== "QR" && points.length >= 2 && !wideEnough(points.map((point) => point.getX()), canvas.width)) {
+    if (formatLabel !== "QR" && points.length >= 2 && !wideEnough(points.map((point) => point.getX()), canvas.width, 0.08)) {
       return;
     }
     consider(barcode, formatLabel);

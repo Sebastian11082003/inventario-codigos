@@ -123,6 +123,19 @@ h2 {
   font-weight: 600;
 }
 
+.home-link {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 14px;
+  min-height: 44px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink);
+  font-weight: 700;
+  text-decoration: none;
+}
+
 .hero-note {
   margin-top: 10px;
   max-width: none;

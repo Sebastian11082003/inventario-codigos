@@ -113,10 +113,20 @@ export function listView(input: {
         : `${count} productos listos para exportar.`;
 
   const scan = scanButton("Escanear con la cámara", input.onScan);
+  const home = el("a", {
+    class: "home-link",
+    text: "Página principal",
+    attrs: {
+      href: `${window.location.origin}${window.location.pathname}`,
+      target: "_blank",
+      rel: "noopener noreferrer",
+    },
+  });
   const heroKids: Node[] = [
     brand(),
     el("h1", { text: "Inventario" }),
     el("p", { class: "lede", text: summary }),
+    home,
   ];
   if (count === 0) {
     heroKids.push(scan);
@@ -174,7 +184,12 @@ export function listView(input: {
 
   const dockKids: Node[] = [];
   if (count > 0) {
-    dockKids.push(el("p", { class: "dock-note", text: "La cámara de atrás lee el código" }));
+    dockKids.push(
+      el("p", {
+        class: "dock-note",
+        text: "Exportar Excel hace una copia. El inventario sigue guardado en este teléfono.",
+      }),
+    );
     dockKids.push(scan);
   }
   dockKids.push(el("div", { class: "dock-links" }, [manual, exportButton, categories]));
@@ -267,7 +282,7 @@ export function scanView(input: {
   onManual: () => void;
   onRetry: () => void;
 }): HTMLElement {
-  const close = el("button", { class: "ghost", text: "Cerrar", attrs: { type: "button" } });
+  const close = el("button", { class: "ghost", text: "Inicio", attrs: { type: "button" } });
   close.addEventListener("click", input.onClose);
   const manual = el("button", { class: "ghost", text: "Escribir código", attrs: { type: "button" } });
   manual.addEventListener("click", input.onManual);

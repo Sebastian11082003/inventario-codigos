@@ -135,29 +135,39 @@ export function inspectFrame(data: Uint8ClampedArray, width: number, height: num
   let bestError = Infinity;
   const seenRows = new Set<number>();
   const seenColumns = new Set<number>();
-
-  const considerLine = (axis: LineAxis, at: number, samples: number[]) => {
-    const score = barLikeContrast(samples);
-    if (!best || score > best.score) {
-      best = { axis, at, score };
-    }
-    const hit = decodeLine(samples);
-    if (hit && hit.error < bestError) {
-      code = hit.code;
-      bestError = hit.error;
-    }
+  const candidates: Array<{ axis: LineAxis; at: number; samples: number[]; score: number }> = [];
+  const pushLine = (axis: LineAxis, at: number, samples: number[]) => {
+    candidates.push({ axis, at, samples, score: barLikeContrast(samples) });
   };
 
   for (const fraction of scanFractions()) {
     const y = indexAt(height, fraction);
     if (!seenRows.has(y)) {
       seenRows.add(y);
-      considerLine("row", y, rowSamples(data, width, y));
+      pushLine("row", y, rowSamples(data, width, y));
     }
     const x = indexAt(width, fraction);
     if (!seenColumns.has(x)) {
       seenColumns.add(x);
-      considerLine("column", x, columnSamples(data, width, height, x));
+      pushLine("column", x, columnSamples(data, width, height, x));
+    }
+  }
+
+  candidates.sort((left, right) => right.score - left.score);
+  const strongest = candidates[0];
+  best = strongest ? { axis: strongest.axis, at: strongest.at, score: strongest.score } : null;
+  const limit = Math.min(8, candidates.length);
+  for (let index = 0; index < limit; index += 1) {
+    const candidate = candidates[index];
+    if (!candidate || (candidate.score < MIN_BAR_SCORE && index > 0)) {
+      break;
+    }
+    const hit = decodeLine(candidate.samples);
+    if (hit && hit.error < bestError) {
+      code = hit.code;
+      bestError = hit.error;
+      best = { axis: candidate.axis, at: candidate.at, score: candidate.score };
+      break;
     }
   }
 

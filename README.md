@@ -35,13 +35,13 @@ Hoja `inventario`. La primera fila está congelada. El orden de columnas es fijo
 
 | Columna | Contenido |
 |---|---|
-| `codigo_barras` | Texto, para no perder ceros a la izquierda |
-| `nombre` | Nombre del producto |
-| `categoria` | Nombre visible de la categoría, no el id interno |
-| `cantidad` | Número mayor o igual a 0 |
-| `unidad` | `und`, `kg`, `g`, `L`, `ml`, `caja` o `paquete` |
-| `precio` | Precio unitario. Celda vacía si no se indicó |
-| `notas` | Texto libre. Puede ir vacío |
+| Código | Texto del código escaneado o escrito, para no perder ceros a la izquierda |
+| Nombre | El nombre que escribió el operador |
+| Categoría | Nombre visible de la categoría, no el id interno |
+| Cantidad | Número mayor o igual a 0. Acepta decimales |
+| Unidad | `cantidad`, `kg` o `g` |
+| Precio | Precio unitario. Celda vacía si no se indicó |
+| Notas | Texto libre. Puede ir vacío |
 
 El archivo se llama `inventario-codigos-AAAA-MM-DD.xlsx` y va ordenado por nombre. En pantalla, la lista muestra primero lo que se editó más reciente para poder corregirlo antes de exportar.
 

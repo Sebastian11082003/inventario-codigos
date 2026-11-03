@@ -6,7 +6,7 @@
 - Nombre obligatorio, hasta 120 caracteres.
 - Categoría obligatoria y existente.
 - Cantidad mayor o igual a 0, hasta 3 decimales. Se acepta coma o punto.
-- Unidad de la lista cerrada: und, kg, g, L, ml, caja, paquete. Por defecto `und`.
+- Unidad de la lista cerrada: `cantidad`, `kg` o `g`. Por defecto `cantidad`. Un registro viejo sin unidad, o con `und`, se lee como `cantidad`.
 - Precio vacío o número mayor o igual a 0 con hasta 2 decimales. Vacío no se guarda como 0.
 - Notas hasta 500 caracteres.
 - El código es único. Escanear uno que ya existe abre esa ficha. No se crea un duplicado.

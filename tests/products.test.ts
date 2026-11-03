@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { seedCategories } from "../src/domain/categories";
-import { acceptScannedCode, emptyDraft, findByBarcode, validateDraft } from "../src/domain/products";
-import type { StoredProduct } from "../src/domain/types";
+import { acceptScannedCode, draftFromProduct, emptyDraft, findByBarcode, validateDraft } from "../src/domain/products";
+import { normalizeUnit, unitAmountLabel, type StoredProduct } from "../src/domain/types";
 
 const categories = seedCategories();
 
@@ -12,7 +12,7 @@ function product(partial: Partial<StoredProduct> = {}): StoredProduct {
     name: "Arroz",
     categoryId: "cat-abarrotes",
     quantity: 1,
-    unit: "und",
+    unit: "cantidad",
     price: null,
     notes: "",
     updatedAt: "2026-11-03T00:00:00.000Z",
@@ -47,10 +47,47 @@ describe("productos", () => {
       name: "Arroz Diana",
       categoryId: "cat-otros",
       quantity: 1.5,
-      unit: "und",
+      unit: "cantidad",
       price: null,
       notes: "estante 2",
     });
+  });
+
+  it("acepta 0,5 kg y 250 g, y un decimal en cantidad no rompe el guardado", () => {
+    const kilos = validateDraft(
+      { ...emptyDraft("100", categories), name: "Queso", quantity: "0,5", unit: "kg" },
+      categories,
+    );
+    const gramos = validateDraft(
+      { ...emptyDraft("200", categories), name: "Canela", quantity: "250", unit: "g" },
+      categories,
+    );
+    const unidades = validateDraft(
+      { ...emptyDraft("300", categories), name: "Huevos", quantity: "1.5", unit: "cantidad" },
+      categories,
+    );
+    expect(kilos.ok && kilos.value).toMatchObject({ quantity: 0.5, unit: "kg" });
+    expect(gramos.ok && gramos.value).toMatchObject({ quantity: 250, unit: "g" });
+    expect(unidades.ok && unidades.value).toMatchObject({ quantity: 1.5, unit: "cantidad" });
+    expect(unitAmountLabel("g")).toBe("gramos");
+    expect(unitAmountLabel("kg")).toBe("kg");
+    expect(unitAmountLabel("cantidad")).toBe("cantidad");
+  });
+
+  it("rechaza una unidad fuera de cantidad, kg y g, y lee und como cantidad", () => {
+    const result = validateDraft(
+      { ...emptyDraft("400", categories), name: "Leche", quantity: "1", unit: "L" },
+      categories,
+    );
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.errors.unit).toBe("Elige una unidad de la lista.");
+    }
+    expect(normalizeUnit(undefined)).toBe("cantidad");
+    expect(normalizeUnit("und")).toBe("cantidad");
+    expect(normalizeUnit("gramos")).toBe("g");
+    expect(draftFromProduct(product({ unit: "und" })).unit).toBe("cantidad");
+    expect(emptyDraft("1", categories).unit).toBe("cantidad");
   });
 
   it("rechaza nombre vacío, cantidad negativa y precio ilegible", () => {
@@ -60,7 +97,7 @@ describe("productos", () => {
         name: "  ",
         categoryId: "cat-bebidas",
         quantity: "-1",
-        unit: "und",
+        unit: "cantidad",
         price: "gratis",
         notes: "",
       },

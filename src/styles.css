@@ -312,6 +312,14 @@ h2 {
   font-weight: 800;
   letter-spacing: -0.04em;
   font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.qty-unit {
+  margin-left: 0.28rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0;
 }
 
 .step, .ghost, .ink-btn, .danger-btn, .scan-cta, .dock-link, .save-btn, .delete-btn {

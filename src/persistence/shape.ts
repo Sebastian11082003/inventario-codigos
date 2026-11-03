@@ -1,4 +1,4 @@
-import type { Category, StoredProduct } from "../domain/types";
+import { normalizeUnit, type Category, type StoredProduct } from "../domain/types";
 
 export const DB_NAME = "inventario-codigos";
 export const DB_VERSION = 1;
@@ -17,14 +17,24 @@ export const STORED_PRODUCT_KEYS = [
   "updatedAt",
 ] as const;
 
-export function toStoredProduct(product: StoredProduct): StoredProduct {
+export function toStoredProduct(product: {
+  id: string;
+  barcode: string;
+  name: string;
+  categoryId: string;
+  quantity: number;
+  unit?: unknown;
+  price: number | null;
+  notes: string;
+  updatedAt: string;
+}): StoredProduct {
   return {
     id: product.id,
     barcode: product.barcode,
     name: product.name,
     categoryId: product.categoryId,
     quantity: product.quantity,
-    unit: product.unit,
+    unit: normalizeUnit(product.unit),
     price: product.price,
     notes: product.notes,
     updatedAt: product.updatedAt,
@@ -36,14 +46,15 @@ export function isStoredProduct(value: unknown): value is StoredProduct {
     return false;
   }
   const record = value as Record<string, unknown>;
+  const keys = STORED_PRODUCT_KEYS.filter((key) => key !== "unit");
   return (
-    STORED_PRODUCT_KEYS.every((key) => key in record) &&
+    keys.every((key) => key in record) &&
     typeof record.id === "string" &&
     typeof record.barcode === "string" &&
     typeof record.name === "string" &&
     typeof record.categoryId === "string" &&
     typeof record.quantity === "number" &&
-    typeof record.unit === "string" &&
+    Number.isFinite(record.quantity) &&
     (record.price === null || typeof record.price === "number") &&
     typeof record.notes === "string" &&
     typeof record.updatedAt === "string"

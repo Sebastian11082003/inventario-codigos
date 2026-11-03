@@ -11,7 +11,7 @@
 | QR | Código de dos dimensiones. Si contiene un enlace, se guarda el texto y no se navega |
 | Categoría | Grupo elegido por el operador (Abarrotes, Bebidas, Limpieza, Otros u otra) |
 | POS | Punto de venta que importará el Excel. Está fuera de este sistema |
-| Unidad | Cómo se cuenta el producto: und, kg, g, L, ml, caja, paquete |
+| Unidad | Cómo se mide el producto: cantidad, kg o g. En pantalla, g se muestra como gramos |
 | Precio unitario | Opcional. Celda vacía en el Excel si no se escribe |
 | IndexedDB | Base del navegador donde vive el inventario en este teléfono |
 | facingMode environment | Pista de `getUserMedia` que pide la cámara trasera |

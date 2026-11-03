@@ -5,6 +5,7 @@ import {
   NAME_MAX_LENGTH,
   NOTES_MAX_LENGTH,
   UNITS,
+  normalizeUnit,
   type Category,
   type StoredProduct,
   type Unit,
@@ -143,7 +144,7 @@ export function draftFromProduct(product: StoredProduct): DraftInput {
     name: product.name,
     categoryId: product.categoryId,
     quantity: String(product.quantity),
-    unit: product.unit,
+    unit: normalizeUnit(product.unit),
     price: product.price === null ? "" : String(product.price),
     notes: product.notes,
   };

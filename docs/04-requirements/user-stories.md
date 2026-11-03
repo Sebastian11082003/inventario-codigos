@@ -22,6 +22,8 @@ Como operador, quiero escribir el código cuando la cámara no pueda usarse.
 Como operador, quiero nombre, categoría, cantidad, unidad, precio opcional y notas para que el POS reciba datos útiles.
 
 - Dado un precio vacío, cuando guardo, entonces el precio queda nulo y no cero.
+- Dado un producto nuevo, cuando abro la ficha, entonces la unidad es Cantidad y puedo cambiarla a kg o Gramos.
+- Dado 0,5 kg o 250 g, cuando guardo, entonces el número se conserva. Un decimal en cantidad tampoco se rechaza.
 - Dado un nombre vacío o una cantidad negativa, cuando guardo, entonces la ficha no se cierra y marca el campo.
 
 ## HU-04 Categorías
@@ -42,7 +44,7 @@ Como operador, quiero que un refresco no borre el estante.
 Como operador, quiero corregir la lista y descargar el Excel.
 
 - Dado un estante vacío, cuando miro exportar, entonces la acción está deshabilitada.
-- Dado productos guardados, cuando exporto, entonces el archivo trae las siete columnas en el orden del contrato y el código como texto.
+- Dado productos guardados, cuando exporto, entonces el archivo trae Código, Nombre, Categoría, Cantidad, Unidad y, después, Precio y Notas. El código va como texto y la unidad como `cantidad`, `kg` o `g`.
 
 ## HU-07 Cámara no disponible
 

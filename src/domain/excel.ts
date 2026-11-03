@@ -1,5 +1,12 @@
 import { categoryName } from "./categories";
-import { EXCEL_COLUMNS, type Category, type ExcelRow, type StoredProduct } from "./types";
+import {
+  EXCEL_COLUMNS,
+  EXCEL_HEADERS,
+  normalizeUnit,
+  type Category,
+  type ExcelRow,
+  type StoredProduct,
+} from "./types";
 
 export function toExcelRow(product: StoredProduct, categories: readonly Category[]): ExcelRow {
   return {
@@ -7,7 +14,7 @@ export function toExcelRow(product: StoredProduct, categories: readonly Category
     nombre: product.name,
     categoria: categoryName(categories, product.categoryId),
     cantidad: product.quantity,
-    unidad: product.unit,
+    unidad: normalizeUnit(product.unit),
     precio: product.price === null ? "" : product.price,
     notas: product.notes,
   };
@@ -19,7 +26,7 @@ export function toExcelMatrix(
 ): (string | number)[][] {
   const rows = [...products].sort((left, right) => left.name.localeCompare(right.name, "es"));
   return [
-    [...EXCEL_COLUMNS],
+    [...EXCEL_HEADERS],
     ...rows.map((product) => {
       const row = toExcelRow(product, categories);
       return EXCEL_COLUMNS.map((column) => row[column]);

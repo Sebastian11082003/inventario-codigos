@@ -1,6 +1,6 @@
 import { categoryName } from "../domain/categories";
 import { describeProduct } from "../domain/products";
-import { UNITS, type Category, type StoredProduct } from "../domain/types";
+import { UNITS, normalizeUnit, unitAmountLabel, unitOptionLabel, type Category, type StoredProduct } from "../domain/types";
 import type { DraftInput, FieldErrors } from "../domain/products";
 import { CAMERA_FAILURE_COPY, type CameraFailure } from "../camera/errors";
 import { el } from "./dom";
@@ -201,11 +201,10 @@ function ticket(
       el("span", { class: `stamp ${toneFor(category)}`, text: category }),
     ]),
     el("span", { class: "barcode", text: product.barcode }),
-    el("span", {
-      class: "ticket-meta",
-      text: product.price === null ? product.unit : `${product.unit} · ${formatPrice(product.price)}`,
-    }),
   ]);
+  if (product.price !== null) {
+    open.append(el("span", { class: "ticket-meta", text: formatPrice(product.price) }));
+  }
   open.addEventListener("click", () => onEdit(product.id));
 
   const minus = el("button", {
@@ -223,7 +222,10 @@ function ticket(
 
   const qty = el("div", { class: "qty" }, [
     minus,
-    el("span", { class: "qty-value", text: formatQuantity(product.quantity) }),
+    el("span", { class: "qty-value" }, [
+      el("span", { text: formatQuantity(product.quantity) }),
+      el("span", { class: "qty-unit", text: unitAmountLabel(product.unit) }),
+    ]),
     plus,
   ]);
 
@@ -410,9 +412,10 @@ export function formView(input: {
   }
 
   const unit = el("select", { attrs: { id: "unit", name: "unit", "aria-describedby": "err-unit" } });
+  const selectedUnit = normalizeUnit(input.draft.unit);
   for (const optionUnit of UNITS) {
-    const option = el("option", { text: optionUnit, attrs: { value: optionUnit } });
-    if (optionUnit === input.draft.unit) {
+    const option = el("option", { text: unitOptionLabel(optionUnit), attrs: { value: optionUnit } });
+    if (optionUnit === selectedUnit) {
       option.selected = true;
     }
     unit.append(option);

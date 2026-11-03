@@ -8,7 +8,8 @@ Piezas del ADN del mostrador. No entran la página blanca con un botón verde, e
 | Lista vacía | Marca de código con lente, título y tres acciones en columna. El botón de escanear vive en la cabecera |
 | Lista con productos | La cabecera se acorta. Escanear pasa al pie y permanece visible |
 | Tarjeta | Superficie blanca, radio 22 px, sombra suave. El nombre es lo más grande. La categoría es una pastilla de color fijo por nombre |
-| Cantidad | Bandeja `#ffe8dc` a lo ancho: −, número, +. Cada botón mide 48 px |
+| Cantidad | Bandeja `#ffe8dc` a lo ancho: −, número con la unidad al lado (cantidad, kg o gramos), +. Cada botón mide 48 px |
+| Unidad en la ficha | Al lado del número, un selector con Cantidad, kg y Gramos. Cantidad queda elegida al crear. No cambia el resto de la ficha |
 | Escanear | Cápsula de tinta, alto mínimo 64 px, texto blanco, sello papaya con icono de cámara |
 | Acciones secundarias | Escribir código, Exportar Excel y Categorías. Exportar se desactiva si la lista está vacía |
 | Ficha | Banda papaya con el código en mono. Campos blancos, radio 16 px, texto a 16 px, etiquetas en tinta |

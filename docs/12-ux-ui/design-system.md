@@ -14,6 +14,7 @@ Piezas del ADN del mostrador. No entran la página blanca con un botón verde, e
 | Ficha | Banda papaya con el código en mono. Campos blancos, radio 16 px, texto a 16 px, etiquetas en tinta |
 | Error | Fondo `#fff1f2`, texto `#9f1239` y borde del campo en el mismo rojo. El campo inválido recibe el foco |
 | Visor | Video a sangre, alrededor oscurecido, esquinas papaya, línea de lectura y estado en una pastilla oscura |
+| Flash | En la barra del visor, a la derecha y en una segunda fila, solo si la pista informa `torch`. Apagado: pastilla translúcida, borde claro y lámpara hueca. Encendido: papaya `#ff4f30` con texto de tinta y lámpara llena. No tapa el recuadro. Al salir, la luz se apaga |
 | Guardar | Botón de tinta. Confirmar el código leído es papaya con texto de tinta |
 | Eliminar | Primero un botón rosa suave; la confirmación es rojo sólido |
 | Categorías | Una tarjeta blanca por nombre, con Guardar y Borrar a 48 px |

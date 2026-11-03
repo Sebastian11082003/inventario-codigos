@@ -4,6 +4,7 @@ import { CAMERA_FAILURE_COPY, classifyCameraFailure } from "../src/camera/errors
 import { coverSourceRect } from "../src/camera/frame";
 import { SUPPORTED_FORMAT_LABELS } from "../src/camera/formats";
 import { advanceStreak, hasValidGs1CheckDigit, wideEnough } from "../src/camera/stability";
+import { trackSupportsTorch } from "../src/camera/torch";
 
 describe("cámara trasera", () => {
   it("pide getUserMedia con facingMode environment y sin audio", () => {
@@ -42,6 +43,17 @@ describe("cámara trasera", () => {
     expect(hasValidGs1CheckDigit("7702535011088")).toBe(false);
     expect(wideEnough([10, 500], 1000)).toBe(true);
     expect(wideEnough([10, 80], 1000)).toBe(false);
+  });
+
+  it("muestra Flash solo si las capacidades de la pista incluyen torch", () => {
+    expect(trackSupportsTorch(undefined)).toBe(false);
+    expect(trackSupportsTorch(null)).toBe(false);
+    expect(trackSupportsTorch({})).toBe(false);
+    expect(trackSupportsTorch({ torch: false })).toBe(false);
+    expect(trackSupportsTorch({ torch: [false] })).toBe(false);
+    expect(trackSupportsTorch({ torch: true })).toBe(true);
+    expect(trackSupportsTorch({ torch: [true] })).toBe(true);
+    expect(trackSupportsTorch({ torch: [false, true] })).toBe(true);
   });
 
   it("recorta el centro visible y deja fuera el borde del sensor", () => {

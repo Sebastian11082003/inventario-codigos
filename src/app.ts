@@ -22,7 +22,7 @@ import { buildXlsx, downloadXlsx } from "./export/xlsx";
 import { IdbInventoryRepository } from "./persistence/idb";
 import { MemoryInventoryRepository } from "./persistence/memory";
 import type { InventoryRepository } from "./persistence/repository";
-import { categoriesView, detectedCard, formView, listView, loadingView, manualView, scanView } from "./ui/views";
+import { categoriesView, detectedCard, flashToggle, formView, listView, loadingView, manualView, scanView } from "./ui/views";
 
 type FormModel = {
   id: string | null;
@@ -55,6 +55,8 @@ export function startApp(root: HTMLElement, repository: InventoryRepository = cr
   };
   let repo = repository;
   let session: ScanSession | null = null;
+  let releaseScan: Promise<void> = Promise.resolve();
+  let scanGate: Promise<void> = Promise.resolve();
   let scanToken = 0;
 
   const paint = () => {
@@ -90,9 +92,18 @@ export function startApp(root: HTMLElement, repository: InventoryRepository = cr
 
   function stopScan() {
     scanToken += 1;
-    session?.stop();
+    const current = session;
     session = null;
+    if (!current) {
+      return;
+    }
+    current.stop();
+    releaseScan = current.whenReleased;
   }
+
+  window.addEventListener("pagehide", () => {
+    stopScan();
+  });
 
   function openForm(form: FormModel) {
     stopScan();
@@ -116,11 +127,34 @@ export function startApp(root: HTMLElement, repository: InventoryRepository = cr
     });
   }
 
+  function holdScan(next: ScanSession) {
+    next.stop();
+    releaseScan = next.whenReleased;
+  }
+
   async function openScanner() {
+    const previous = scanGate;
+    let releaseGate: () => void = () => undefined;
+    scanGate = new Promise<void>((resolve) => {
+      releaseGate = resolve;
+    });
+    await previous;
+    try {
+      await runScanner();
+    } finally {
+      releaseGate();
+    }
+  }
+
+  async function runScanner() {
     stopScan();
     const token = scanToken;
     model.view = { name: "scan", phase: "opening", failure: null };
     paint();
+    await releaseScan;
+    if (token !== scanToken || model.view.name !== "scan") {
+      return;
+    }
     const video = root.querySelector<HTMLVideoElement>("#scan-video");
     if (!video) {
       return;
@@ -167,7 +201,7 @@ export function startApp(root: HTMLElement, repository: InventoryRepository = cr
         },
       );
       if (token !== scanToken || model.view.name !== "scan") {
-        next.stop();
+        holdScan(next);
         return;
       }
       session = next;
@@ -175,6 +209,12 @@ export function startApp(root: HTMLElement, repository: InventoryRepository = cr
       const status = root.querySelector("#scan-status");
       if (status) {
         status.textContent = "Centra el código y mantenlo quieto un momento.";
+      }
+      if (next.torchSupported) {
+        const bar = root.querySelector(".scan-bar");
+        if (bar && !bar.querySelector(".flash-toggle")) {
+          bar.append(flashToggle((on) => next.setTorch(on)));
+        }
       }
     } catch {
       if (token !== scanToken) {

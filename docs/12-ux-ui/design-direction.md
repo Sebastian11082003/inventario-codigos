@@ -26,6 +26,7 @@ references:
     patterns:
       - El escáner ocupa el pulgar: el botón de captura está en la cabecera si la lista está vacía y fijo abajo cuando ya hay productos.
       - Si la cámara falla, el texto dice qué pasó y Escribir código sigue disponible.
+      - Si el teléfono tiene flash, Flash queda en la barra del visor, al alcance del pulgar y fuera del recuadro.
       - La cantidad se cambia en la tarjeta, con − y +, sin abrir la ficha.
       - El estado vacío enseña el primer paso en vez de dejar un hueco.
   godly:
@@ -67,7 +68,7 @@ Campo papaya, título de display y un botón de tinta. No es una página blanca 
 |---|---|---|---|---|
 | Lista vacía | Cabecera papaya con el botón de escanear y hoja con la marca del código | El título y el botón | La cápsula de tinta | Una columna |
 | Lista con productos | Cabecera corta y tarjetas; el botón pasa al pie | El nombre y la cantidad | La bandeja de cantidad | Una columna, pie fijo |
-| Cámara | Video a sangre, ventana oscura y esquinas papaya | La frase de mantener quieto | El recuadro | Alto del teléfono |
+| Cámara | Video a sangre, ventana oscura, esquinas papaya y, si hay flash, el control en la barra | La frase de mantener quieto | El recuadro | Alto del teléfono |
 | Ficha | Banda papaya con el código y campos blancos | El código ya leído | El nombre | Una columna, se desplaza |
 | Categorías | Tarjeta por categoría | El nombre | Guardar | Una columna |
 
@@ -99,7 +100,7 @@ design_dna:
   radius: 16 px en campos, 18–22 px en tarjetas y botones, 28 px en la hoja, 32 px en el marco de escritorio
   shadows: sombra suave teñida, nunca desplazamiento duro
   imagery: marca de código con lente en el vacío; el video de la cámara es la imagen del escáner
-  icons: cámara en el botón de escanear; cuatro esquinas papaya en el visor
+  icons: cámara en el botón de escanear; cuatro esquinas papaya en el visor; lámpara en Flash
   motion: el botón se hunde al pulsar y una línea recorre el visor; se apaga con prefers-reduced-motion
   density: táctil, controles de al menos 48 px, campos a 16 px para que iOS no haga zoom
 ```
@@ -127,4 +128,4 @@ La lista blanca (A) bajaba la identidad. El talonario (B) bajaba actualidad y am
 
 ## Implementación
 
-`src/styles.css`, `src/ui` y `index.html` usan estos tokens. Escanear es la cápsula de tinta. Guardar es tinta. Confirmar el código leído usa la papaya con texto de tinta. El foco visible es un anillo. En el visor el anillo es blanco.
+`src/styles.css`, `src/ui` y `index.html` usan estos tokens. Escanear es la cápsula de tinta. Guardar es tinta. Confirmar el código leído usa la papaya con texto de tinta. Flash encendido usa la misma papaya con texto de tinta; apagado sigue en la barra oscura del visor. El foco visible es un anillo. En el visor el anillo es blanco.

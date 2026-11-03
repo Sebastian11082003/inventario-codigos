@@ -6,6 +6,7 @@ import { classifyCameraFailure, type CameraFailure } from "./errors";
 import { coverSourceRect } from "./frame";
 import type { SupportedFormatLabel } from "./formats";
 import { advanceStreak, hasValidGs1CheckDigit, wideEnough, type ReadStreak } from "./stability";
+import { applyTorch, trackSupportsTorch, type TorchCapabilities } from "./torch";
 
 const FORMAT_LABELS = new Map<BarcodeFormat, SupportedFormatLabel>([
   [BarcodeFormat.EAN_13, "EAN-13"],
@@ -34,7 +35,10 @@ export type ScanHit = {
 
 export type ScanSession = {
   stop: () => void;
+  whenReleased: Promise<void>;
   resume: () => void;
+  torchSupported: boolean;
+  setTorch: (on: boolean) => Promise<boolean>;
 };
 
 type NativeBarcode = {
@@ -229,21 +233,113 @@ export async function startRearCameraScan(
     void readFrame();
   }, 180);
 
+  const videoTrack = stream.getVideoTracks()[0];
+  const torchSupported = trackSupportsTorch(readTorchCapabilities(videoTrack));
+  let torchTouched = false;
+  let torchTask: Promise<void> = Promise.resolve();
+  let released = false;
+  let resolveReleased: () => void = () => undefined;
+  const whenReleased = new Promise<void>((resolve) => {
+    resolveReleased = resolve;
+  });
+
+  const releaseTracks = () => {
+    if (released) {
+      return;
+    }
+    released = true;
+    for (const track of stream.getTracks()) {
+      track.stop();
+    }
+    if (video.srcObject === stream) {
+      video.srcObject = null;
+    }
+    resolveReleased();
+  };
+
+  const setTorch = (on: boolean): Promise<boolean> => {
+    if (stopped || !torchSupported || !videoTrack) {
+      return Promise.resolve(false);
+    }
+    torchTouched = true;
+    const task = torchTask.then(async () => {
+      if (stopped || !videoTrack) {
+        return false;
+      }
+      try {
+        await applyTorch(videoTrack, on);
+      } catch {
+        return false;
+      }
+      if (stopped) {
+        if (on) {
+          try {
+            await applyTorch(videoTrack, false);
+          } catch {
+            // stop() vuelve a pedir torch false antes de soltar la pista.
+          }
+        }
+        return false;
+      }
+      return true;
+    });
+    torchTask = task.then(
+      () => undefined,
+      () => undefined,
+    );
+    return task;
+  };
+
   return {
+    torchSupported,
+    whenReleased,
+    setTorch,
     stop() {
       if (stopped) {
         return;
       }
       stopped = true;
       window.clearInterval(timer);
-      for (const track of stream.getTracks()) {
-        track.stop();
+      if (!torchTouched || !videoTrack) {
+        releaseTracks();
+        return;
       }
-      video.srcObject = null;
+      let finished = false;
+      const finish = () => {
+        if (finished) {
+          return;
+        }
+        finished = true;
+        releaseTracks();
+      };
+      // Apaga la luz antes de soltar la pista: en algunos teléfonos track.stop() deja el LED encendido.
+      const shutdown = torchTask.then(async () => {
+        if (!videoTrack) {
+          return;
+        }
+        try {
+          await applyTorch(videoTrack, false);
+        } catch {
+          // Igual se cierra la pista para no dejar la cámara tomada.
+        }
+      });
+      void shutdown.finally(finish);
+      window.setTimeout(finish, 800);
     },
     resume() {
       latched = false;
       streak = null;
     },
   };
+}
+
+function readTorchCapabilities(track: MediaStreamTrack | undefined): TorchCapabilities | undefined {
+  if (!track || typeof track.getCapabilities !== "function") {
+    return undefined;
+  }
+  try {
+    return track.getCapabilities() as TorchCapabilities;
+  } catch {
+    return undefined;
+  }
 }

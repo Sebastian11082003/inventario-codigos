@@ -230,6 +230,34 @@ function ticket(
   return el("article", { class: "ticket" }, [open, qty]);
 }
 
+export function flashToggle(setTorch: (on: boolean) => Promise<boolean>): HTMLButtonElement {
+  let on = false;
+  const button = el(
+    "button",
+    { class: "flash-toggle", attrs: { type: "button", "aria-pressed": "false" } },
+    [el("span", { class: "flash-lamp", attrs: { "aria-hidden": "true" } }), el("span", { text: "Flash" })],
+  );
+
+  const paint = () => {
+    button.classList.toggle("is-on", on);
+    button.setAttribute("aria-pressed", on ? "true" : "false");
+  };
+
+  button.addEventListener("click", () => {
+    const next = !on;
+    button.disabled = true;
+    void setTorch(next).then((applied) => {
+      if (applied) {
+        on = next;
+      }
+      button.disabled = false;
+      paint();
+    });
+  });
+
+  return button;
+}
+
 export function scanView(input: {
   phase: "opening" | "live" | "failed";
   failure: CameraFailure | null;

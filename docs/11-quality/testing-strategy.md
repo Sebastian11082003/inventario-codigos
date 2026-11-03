@@ -6,8 +6,8 @@
 | Ficha inválida, precio vacío, QR como texto | Unitaria | `tests/products.test.ts` |
 | Columnas, orden, código con ceros, hoja `inventario` | Unitaria sobre el xlsx | `tests/excel.test.ts` |
 | Forma IndexedDB y precio nulo | Unitaria con `fake-indexeddb` | `tests/persistence.test.ts` |
-| `facingMode: "environment"`, sin audio, errores de cámara | Unitaria del contrato | `tests/camera.test.ts` |
-| Lectura con una cámara física | Manual en el teléfono | No automatizada. Ver riesgos |
+| `facingMode: "environment"`, sin audio, errores de cámara, mostrar Flash solo si hay `torch` | Unitaria del contrato | `tests/camera.test.ts` |
+| Lectura con una cámara física y la luz del flash | Manual en el teléfono | No automatizada. Ver riesgos |
 
 Comando: `npm test` en la raíz de este repositorio.
 

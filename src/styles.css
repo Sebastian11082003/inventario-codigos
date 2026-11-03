@@ -446,6 +446,51 @@ h2 {
   font-weight: 700;
 }
 
+.flash-toggle {
+  grid-column: 3;
+  grid-row: 2;
+  justify-self: stretch;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  margin: 0;
+  padding: 8px 12px;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.flash-toggle.is-on {
+  border-color: #fff;
+  background: var(--papaya);
+  color: var(--ink);
+}
+
+.flash-lamp {
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  box-sizing: border-box;
+  flex: none;
+}
+
+.flash-toggle.is-on .flash-lamp {
+  background: var(--ink);
+  box-shadow: 0 0 0 3px rgba(28, 20, 16, 0.16);
+}
+
+.flash-toggle:disabled {
+  opacity: 0.72;
+}
+
 .ghost {
   color: inherit;
   background: transparent;
@@ -797,7 +842,8 @@ textarea[aria-invalid="true"] {
   .save-btn:active,
   .delete-btn:active,
   .danger-btn:active,
-  .ghost:active {
+  .ghost:active,
+  .flash-toggle:active {
     transform: scale(0.98);
   }
 }

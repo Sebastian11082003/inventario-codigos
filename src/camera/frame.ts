@@ -15,7 +15,7 @@ export function coverSourceRect(
   viewWidth: number,
   viewHeight: number,
   insetX = 0.12,
-  insetY = 0.14,
+  insetY = 0.16,
 ): SourceRect | null {
   if (videoWidth < 2 || videoHeight < 2 || viewWidth < 2 || viewHeight < 2) {
     return null;
@@ -33,4 +33,14 @@ export function coverSourceRect(
     return null;
   }
   return { sx, sy, sw, sh };
+}
+
+/** Franja central del recuadro: ahí está el código cuando se apoya sobre la línea. */
+export function centerBandRect(
+  videoWidth: number,
+  videoHeight: number,
+  viewWidth: number,
+  viewHeight: number,
+): SourceRect | null {
+  return coverSourceRect(videoWidth, videoHeight, viewWidth, viewHeight, 0.16, 0.34);
 }

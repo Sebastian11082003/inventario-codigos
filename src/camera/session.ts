@@ -1,12 +1,23 @@
-import { BrowserMultiFormatReader } from "@zxing/browser";
-import { BarcodeFormat, DecodeHintType, type Result } from "@zxing/library";
+import { HTMLCanvasElementLuminanceSource } from "@zxing/browser";
+import {
+  BarcodeFormat,
+  BinaryBitmap,
+  DecodeHintType,
+  GlobalHistogramBinarizer,
+  HybridBinarizer,
+  MultiFormatReader,
+  type Result,
+} from "@zxing/library";
 import { acceptScannedCode } from "../domain/products";
 import { REAR_CAMERA_CONSTRAINTS } from "./constraints";
+import { readEan13 } from "./ean";
 import { classifyCameraFailure, type CameraFailure } from "./errors";
-import { coverSourceRect } from "./frame";
+import { centerBandRect, coverSourceRect, type SourceRect } from "./frame";
 import type { SupportedFormatLabel } from "./formats";
+import { sharpenRGBA } from "./sharpen";
 import { advanceStreak, hasValidGs1CheckDigit, wideEnough, type ReadStreak } from "./stability";
 import { applyTorch, trackSupportsTorch, type TorchCapabilities } from "./torch";
+import { preferredZoom, type ZoomRange } from "./zoom";
 
 const FORMAT_LABELS = new Map<BarcodeFormat, SupportedFormatLabel>([
   [BarcodeFormat.EAN_13, "EAN-13"],
@@ -52,7 +63,7 @@ type NativeDetector = {
   detect: (source: CanvasImageSource) => Promise<NativeBarcode[]>;
 };
 
-function createReader(): BrowserMultiFormatReader {
+function createReader(): MultiFormatReader {
   const hints = new Map<DecodeHintType, unknown>();
   hints.set(DecodeHintType.POSSIBLE_FORMATS, [
     BarcodeFormat.EAN_13,
@@ -62,10 +73,10 @@ function createReader(): BrowserMultiFormatReader {
     BarcodeFormat.CODE_39,
     BarcodeFormat.QR_CODE,
   ]);
-  return new BrowserMultiFormatReader(hints, {
-    delayBetweenScanAttempts: 280,
-    delayBetweenScanSuccess: 700,
-  });
+  hints.set(DecodeHintType.TRY_HARDER, true);
+  const reader = new MultiFormatReader();
+  reader.setHints(hints);
+  return reader;
 }
 
 function createNativeDetector(): NativeDetector | null {
@@ -95,7 +106,7 @@ export async function openRearCamera(): Promise<MediaStream> {
   }
   const stream = await navigator.mediaDevices.getUserMedia(REAR_CAMERA_CONSTRAINTS);
   const track = stream.getVideoTracks()[0];
-  const capabilities = track?.getCapabilities?.() as { focusMode?: string[] } | undefined;
+  const capabilities = track?.getCapabilities?.() as { focusMode?: string[]; zoom?: ZoomRange } | undefined;
   if (track && capabilities?.focusMode?.includes("continuous")) {
     try {
       await track.applyConstraints({ advanced: [{ focusMode: "continuous" } as MediaTrackConstraintSet] });
@@ -103,11 +114,94 @@ export async function openRearCamera(): Promise<MediaStream> {
       // El enfoque continuo no es obligatorio para abrir la cámara.
     }
   }
+  const zoom = preferredZoom(capabilities?.zoom);
+  if (track && zoom) {
+    try {
+      await track.applyConstraints({ advanced: [{ zoom } as MediaTrackConstraintSet] });
+    } catch {
+      // Si el teléfono no deja acercar, la lectura sigue con el recorte ampliado.
+    }
+  }
   return stream;
 }
 
+const ROW_FRACTIONS = [0.32, 0.42, 0.5, 0.58, 0.68];
+
 function labelFor(result: Result): SupportedFormatLabel | null {
   return FORMAT_LABELS.get(result.getBarcodeFormat()) ?? null;
+}
+
+function clampRect(rect: SourceRect, width: number, height: number): SourceRect {
+  const sx = Math.max(0, Math.min(width - 2, Math.round(rect.sx)));
+  const sy = Math.max(0, Math.min(height - 2, Math.round(rect.sy)));
+  const sw = Math.max(2, Math.min(width - sx, Math.round(rect.sw)));
+  const sh = Math.max(2, Math.min(height - sy, Math.round(rect.sh)));
+  return { sx, sy, sw, sh };
+}
+
+function hasContrast(data: Uint8ClampedArray): boolean {
+  let min = 255;
+  let max = 0;
+  for (let index = 0; index < data.length; index += 64) {
+    const luminance = data[index];
+    if (luminance < min) {
+      min = luminance;
+    }
+    if (luminance > max) {
+      max = luminance;
+    }
+  }
+  return max - min >= 18;
+}
+
+function paintVideo(video: HTMLVideoElement, full: HTMLCanvasElement, fullContext: CanvasRenderingContext2D): boolean {
+  const videoWidth = video.videoWidth;
+  const videoHeight = video.videoHeight;
+  if (videoWidth < 2 || videoHeight < 2) {
+    return false;
+  }
+  const scale = Math.min(1, 1920 / Math.max(videoWidth, videoHeight));
+  const width = Math.max(2, Math.round(videoWidth * scale));
+  const height = Math.max(2, Math.round(videoHeight * scale));
+  if (full.width !== width) {
+    full.width = width;
+  }
+  if (full.height !== height) {
+    full.height = height;
+  }
+  fullContext.imageSmoothingEnabled = true;
+  fullContext.drawImage(video, 0, 0, width, height);
+  return true;
+}
+
+function readRetailRow(image: ImageData): string | null {
+  const { data, width, height } = image;
+  for (const fraction of ROW_FRACTIONS) {
+    const y = Math.min(height - 1, Math.max(0, Math.round(height * fraction)));
+    const row = new Array<number>(width);
+    const offset = y * width * 4;
+    for (let x = 0; x < width; x += 1) {
+      const index = offset + x * 4;
+      row[x] = data[index] * 0.299 + data[index + 1] * 0.587 + data[index + 2] * 0.114;
+    }
+    const hit = readEan13(row);
+    if (hit && wideEnough([hit.start, hit.end], width)) {
+      return hit.code;
+    }
+  }
+  return null;
+}
+
+function decodeCanvas(reader: MultiFormatReader, canvas: HTMLCanvasElement): Result | null {
+  for (const Binarizer of [HybridBinarizer, GlobalHistogramBinarizer]) {
+    try {
+      const source = new HTMLCanvasElementLuminanceSource(canvas);
+      return reader.decodeWithState(new BinaryBitmap(new Binarizer(source)));
+    } catch {
+      reader.reset();
+    }
+  }
+  return null;
 }
 
 function acceptRetail(code: string, formatLabel: SupportedFormatLabel): string | null {
@@ -153,11 +247,14 @@ export async function startRearCameraScan(
 
   const reader = createReader();
   let detector = createNativeDetector();
+  const full = document.createElement("canvas");
+  const fullContext = full.getContext("2d", { willReadFrequently: true });
   const canvas = document.createElement("canvas");
   const context = canvas.getContext("2d", { willReadFrequently: true });
   let latched = false;
   let stopped = false;
   let streak: ReadStreak | null = null;
+  let pass = 0;
 
   const consider = (barcode: string, formatLabel: string) => {
     if (stopped || latched) {
@@ -174,21 +271,36 @@ export async function startRearCameraScan(
   };
 
   const readFrame = async () => {
-    if (stopped || latched || !context || video.readyState < 2) {
+    if (stopped || latched || !context || !fullContext || video.readyState < 2) {
       return;
     }
-    const rect = coverSourceRect(
-      video.videoWidth,
-      video.videoHeight,
-      video.clientWidth || video.videoWidth,
-      video.clientHeight || video.videoHeight,
-    );
-    if (!rect) {
+    if (!paintVideo(video, full, fullContext)) {
       return;
     }
-    canvas.width = Math.min(960, Math.round(rect.sw));
-    canvas.height = Math.max(1, Math.round(canvas.width * (rect.sh / rect.sw)));
-    context.drawImage(video, rect.sx, rect.sy, rect.sw, rect.sh, 0, 0, canvas.width, canvas.height);
+    const viewWidth = video.clientWidth || full.width;
+    const viewHeight = video.clientHeight || full.height;
+    pass += 1;
+    const region = (pass % 2 === 0 ? centerBandRect : coverSourceRect)(full.width, full.height, viewWidth, viewHeight);
+    if (!region) {
+      return;
+    }
+    const source = clampRect(region, full.width, full.height);
+    canvas.width = Math.min(1700, Math.max(1200, Math.round(source.sw * 2)));
+    canvas.height = Math.max(1, Math.round(canvas.width * (source.sh / source.sw)));
+    context.imageSmoothingEnabled = true;
+    context.drawImage(full, source.sx, source.sy, source.sw, source.sh, 0, 0, canvas.width, canvas.height);
+    const image = context.getImageData(0, 0, canvas.width, canvas.height);
+    if (!hasContrast(image.data)) {
+      return;
+    }
+    sharpenRGBA(image.data, canvas.width, canvas.height);
+    context.putImageData(image, 0, 0);
+
+    const retail = readRetailRow(image);
+    if (retail) {
+      consider(retail, "EAN-13");
+      return;
+    }
 
     if (detector) {
       try {
@@ -197,22 +309,21 @@ export async function startRearCameraScan(
         if (best?.rawValue && best.format) {
           const formatLabel = NATIVE_LABELS[best.format];
           const barcode = formatLabel ? acceptRetail(best.rawValue, formatLabel) : null;
+          const boxWidth = best.boundingBox?.width ?? 0;
           const broadEnough =
-            formatLabel === "QR" || wideEnough([best.boundingBox?.x ?? 0, (best.boundingBox?.x ?? 0) + (best.boundingBox?.width ?? 0)], canvas.width);
+            formatLabel === "QR" || boxWidth <= 0 || wideEnough([best.boundingBox?.x ?? 0, (best.boundingBox?.x ?? 0) + boxWidth], canvas.width);
           if (barcode && formatLabel && broadEnough) {
             consider(barcode, formatLabel);
+            return;
           }
         }
-        return;
       } catch {
         detector = null;
       }
     }
 
-    let result: Result;
-    try {
-      result = reader.decodeFromCanvas(canvas);
-    } catch {
+    const result = decodeCanvas(reader, canvas);
+    if (!result) {
       return;
     }
     const formatLabel = labelFor(result);
@@ -224,7 +335,7 @@ export async function startRearCameraScan(
       return;
     }
     const points = result.getResultPoints() ?? [];
-    if (formatLabel !== "QR" && !wideEnough(points.map((point) => point.getX()), canvas.width)) {
+    if (formatLabel !== "QR" && points.length >= 2 && !wideEnough(points.map((point) => point.getX()), canvas.width)) {
       return;
     }
     consider(barcode, formatLabel);

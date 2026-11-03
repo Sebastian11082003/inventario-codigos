@@ -196,7 +196,7 @@ export function startApp(root: HTMLElement, repository: InventoryRepository = cr
         () => {
           const status = root.querySelector("#scan-status");
           if (status && !root.querySelector(".hit")) {
-            status.textContent = "Mantén el código quieto.";
+            status.textContent = "Ya lo veo, no lo muevas.";
           }
         },
       );

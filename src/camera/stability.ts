@@ -32,7 +32,7 @@ export function hasValidGs1CheckDigit(code: string): boolean {
   return (10 - (sum % 10)) % 10 === check;
 }
 
-export function wideEnough(xs: readonly number[], width: number, minimum = 0.45): boolean {
+export function wideEnough(xs: readonly number[], width: number, minimum = 0.12): boolean {
   if (width <= 0 || xs.length < 2) {
     return false;
   }

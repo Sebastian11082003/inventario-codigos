@@ -1,7 +1,7 @@
 # Manual de uso
 
 1. Abre la dirección `https://` en el teléfono. La cabecera es papaya y dice Inventario.
-2. Pulsa **Escanear con la cámara**. Si la lista está vacía, el botón está en la cabecera. Si ya hay productos, queda fijo abajo. Mantén el código quieto hasta que se confirme.
+2. Pulsa **Escanear con la cámara**. Si la lista está vacía, el botón está en la cabecera. Si ya hay productos, queda fijo abajo. La indicación es «Mantén el código quieto.» El número se acepta al segundo acuerdo seguido, no al primero.
 3. Permite la cámara cuando el navegador lo pida. Se usa la de atrás.
 4. Si el teléfono puede iluminar, la barra del visor muestra **Flash**, a la derecha y sin tapar el recuadro. Púlsalo para encender la luz y otra vez para apagarla. El botón pasa a papaya cuando la luz está encendida. Si no aparece, esa cámara no ofreció flash. Cerrar el visor apaga la luz.
 5. Apunta al código hasta que aparezca el número. Pulsa **Usar este código**.

@@ -180,7 +180,7 @@ export function startApp(root: HTMLElement, repository: InventoryRepository = cr
                 next.resume();
                 panel.replaceChildren();
                 if (status) {
-                  status.textContent = "Centra el código y mantenlo quieto un momento.";
+                  status.textContent = "Mantén el código quieto.";
                 }
               },
             ),
@@ -196,7 +196,7 @@ export function startApp(root: HTMLElement, repository: InventoryRepository = cr
         () => {
           const status = root.querySelector("#scan-status");
           if (status && !root.querySelector(".hit")) {
-            status.textContent = "Lo estoy confirmando. No muevas el teléfono.";
+            status.textContent = "Mantén el código quieto.";
           }
         },
       );
@@ -208,7 +208,7 @@ export function startApp(root: HTMLElement, repository: InventoryRepository = cr
       model.view = { name: "scan", phase: "live", failure: null };
       const status = root.querySelector("#scan-status");
       if (status) {
-        status.textContent = "Centra el código y mantenlo quieto un momento.";
+        status.textContent = "Mantén el código quieto.";
       }
       if (next.torchSupported) {
         const bar = root.querySelector(".scan-bar");

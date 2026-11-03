@@ -27,15 +27,15 @@ describe("cámara trasera", () => {
     expect(CAMERA_FAILURE_COPY["no-camera"].title.length).toBeGreaterThan(0);
   });
 
-  it("no confirma un código hasta leerlo tres veces seguidas", () => {
-    const first = advanceStreak(null, "5707135011080");
-    const changed = advanceStreak(first.streak, "7702535011089");
-    const second = advanceStreak(changed.streak, "7702535011089");
-    const third = advanceStreak(second.streak, "7702535011089");
+  it("confirma al segundo acuerdo y descarta un fotograma suelto", () => {
+    const blurry = advanceStreak(null, "5707135011080");
+    const first = advanceStreak(blurry.streak, "7702535011089");
+    const second = advanceStreak(first.streak, "7702535011089");
+    expect(blurry.confirmed).toBe(false);
     expect(first.confirmed).toBe(false);
-    expect(changed.confirmed).toBe(false);
-    expect(changed.streak.count).toBe(1);
-    expect(third.confirmed).toBe(true);
+    expect(first.streak.count).toBe(1);
+    expect(second.confirmed).toBe(true);
+    expect(second.streak.count).toBe(2);
   });
 
   it("valida el dígito de control del EAN-13 de la botella", () => {

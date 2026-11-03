@@ -128,4 +128,4 @@ La lista blanca (A) bajaba la identidad. El talonario (B) bajaba actualidad y am
 
 ## Implementación
 
-`src/styles.css`, `src/ui` y `index.html` usan estos tokens. Escanear es la cápsula de tinta. Guardar es tinta. Confirmar el código leído usa la papaya con texto de tinta. Flash encendido usa la misma papaya con texto de tinta; apagado sigue en la barra oscura del visor. El foco visible es un anillo. En el visor el anillo es blanco.
+`src/styles.css`, `src/ui` y `index.html` usan estos tokens. Escanear es la cápsula de tinta. Guardar es tinta. Confirmar el código leído usa la papaya con texto de tinta. Flash encendido usa la misma papaya con texto de tinta; apagado sigue en la barra oscura del visor. El visor dice «Mantén el código quieto.» y acepta el número al segundo acuerdo. El foco visible es un anillo. En el visor el anillo es blanco.

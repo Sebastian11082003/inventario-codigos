@@ -274,7 +274,7 @@ export function scanView(input: {
     input.phase === "failed"
       ? "La cámara no está disponible."
       : input.phase === "live"
-        ? "Centra el código y mantenlo quieto un momento."
+        ? "Mantén el código quieto."
         : "Pidiendo permiso para la cámara trasera…";
 
   const video = el("video", {

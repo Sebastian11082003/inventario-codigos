@@ -1,4 +1,4 @@
-export const REQUIRED_AGREEMENTS = 3;
+export const REQUIRED_AGREEMENTS = 2;
 
 export type ReadStreak = {
   code: string;

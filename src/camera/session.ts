@@ -27,6 +27,7 @@ const NATIVE_LABELS: Record<string, SupportedFormatLabel> = {
 };
 
 const RETAIL_FORMATS = new Set<SupportedFormatLabel>(["EAN-13", "EAN-8", "UPC-A"]);
+const SCAN_POLL_MS = 90;
 
 export type ScanHit = {
   barcode: string;
@@ -200,9 +201,9 @@ export async function startRearCameraScan(
             formatLabel === "QR" || wideEnough([best.boundingBox?.x ?? 0, (best.boundingBox?.x ?? 0) + (best.boundingBox?.width ?? 0)], canvas.width);
           if (barcode && formatLabel && broadEnough) {
             consider(barcode, formatLabel);
-            return;
           }
         }
+        return;
       } catch {
         detector = null;
       }
@@ -229,9 +230,16 @@ export async function startRearCameraScan(
     consider(barcode, formatLabel);
   };
 
+  let decoding = false;
   const timer = window.setInterval(() => {
-    void readFrame();
-  }, 180);
+    if (decoding || stopped || latched) {
+      return;
+    }
+    decoding = true;
+    void readFrame().finally(() => {
+      decoding = false;
+    });
+  }, SCAN_POLL_MS);
 
   const videoTrack = stream.getVideoTracks()[0];
   const torchSupported = trackSupportsTorch(readTorchCapabilities(videoTrack));

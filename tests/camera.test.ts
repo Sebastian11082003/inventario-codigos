@@ -30,13 +30,19 @@ describe("cámara trasera", () => {
     expect(CAMERA_FAILURE_COPY["no-camera"].title.length).toBeGreaterThan(0);
   });
 
-  it("confirma al segundo acuerdo y descarta un fotograma suelto", () => {
-    const blurry = advanceStreak(null, "5707135011080");
-    const first = advanceStreak(blurry.streak, "7702535011089");
-    const second = advanceStreak(first.streak, "7702535011089");
-    expect(blurry.confirmed).toBe(false);
+  it("confirma al segundo acuerdo y un código distinto reinicia la racha", () => {
+    const wrong = advanceStreak(null, "5707135011080");
+    const first = advanceStreak(wrong.streak, "7702535011089");
+    const reset = advanceStreak(first.streak, "4006381333931");
+    const again = advanceStreak(reset.streak, "7702535011089");
+    const second = advanceStreak(again.streak, "7702535011089");
+    expect(wrong.confirmed).toBe(false);
     expect(first.confirmed).toBe(false);
     expect(first.streak.count).toBe(1);
+    expect(reset.confirmed).toBe(false);
+    expect(reset.streak).toEqual({ code: "4006381333931", count: 1 });
+    expect(again.confirmed).toBe(false);
+    expect(again.streak.count).toBe(1);
     expect(second.confirmed).toBe(true);
     expect(second.streak.count).toBe(2);
   });
@@ -44,8 +50,9 @@ describe("cámara trasera", () => {
   it("valida el dígito de control del EAN-13 de la botella", () => {
     expect(hasValidGs1CheckDigit("7702535011089")).toBe(true);
     expect(hasValidGs1CheckDigit("7702535011088")).toBe(false);
-    expect(wideEnough([10, 500], 1000)).toBe(true);
+    expect(wideEnough([10, 310], 1000)).toBe(true);
     expect(wideEnough([100, 400], 1000)).toBe(true);
+    expect(wideEnough([10, 129], 1000)).toBe(false);
     expect(wideEnough([10, 80], 1000)).toBe(false);
   });
 
@@ -86,6 +93,9 @@ describe("cámara trasera", () => {
     expect(readEan13(soft)?.code).toBe("7702535011089");
     expect(readEan13([...sharp].reverse())?.code).toBe("7702535011089");
     expect(readEan13(thickenSamples(sharp))?.code).toBe("7702535011089");
+    expect(readEan13(sharp)?.code).not.toBe("5707135011080");
+    expect(readEan13(soft)?.code).not.toBe("5707135011080");
+    expect(readEan13([...sharp].reverse())?.code).not.toBe("5707135011080");
     expect(readEan13(renderEan("4006381333931"))?.code).toBe("4006381333931");
     expect(readEan13(new Array(400).fill(200))).toBeNull();
   });
@@ -94,9 +104,23 @@ describe("cámara trasera", () => {
     expect(readEan13(renderEan("7702535011089", 4, 0, 2, 42))?.code).toBe("7702535011089");
     expect(readEan13(renderEan("7702535011089", 4, 0, 1, 42))?.code).toBe("7702535011089");
     expect(readEan13(renderEan("7702535011088", 4, 0, 2, 42))).toBeNull();
-    for (const seed of [1, 2, 3, 9, 42]) {
-      expect(readEan13(noiseRow(seed, 720))).toBeNull();
+    const falseReads: string[] = [];
+    for (let seed = 1; seed <= 80; seed += 1) {
+      const hit = readEan13(noiseRow(seed, 720));
+      if (hit) {
+        falseReads.push(hit.code);
+      }
     }
+    expect(falseReads).toEqual([]);
+    const noisy = blankFrame(180, 96);
+    for (let index = 0; index < noisy.length; index += 4) {
+      const seed = (index * 17 + 11) >>> 0;
+      const value = (Math.imul(seed, 1664525) + 1013904223) >>> 24;
+      noisy[index] = value;
+      noisy[index + 1] = value;
+      noisy[index + 2] = value;
+    }
+    expect(inspectFrame(noisy, 180, 96).code).toBeNull();
   });
 
   it("busca el código arriba, abajo y de lado, no solo en una franja central", () => {

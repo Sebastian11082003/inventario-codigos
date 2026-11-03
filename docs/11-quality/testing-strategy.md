@@ -7,7 +7,7 @@
 | Columnas, orden, código con ceros, hoja `inventario` | Unitaria sobre el xlsx | `tests/excel.test.ts` |
 | Forma IndexedDB y precio nulo | Unitaria con `fake-indexeddb` | `tests/persistence.test.ts` |
 | `facingMode: "environment"`, sin audio, errores de cámara, mostrar Flash solo si hay `torch` | Unitaria del contrato | `tests/camera.test.ts` |
-| EAN-13 de la botella, margen blanco corto, ruido, filas de arriba y de abajo, giro de 90° y ancho mínimo | Unitaria del lector | `tests/camera.test.ts` |
+| EAN-13 de la botella (nítido, borroso, al revés y de lado), otro EAN válido, margen blanco corto, 80 filas de ruido sin falsos, el dígito `7702535011088` rechazado, y que `7702535011089` no se confunda con `5707135011080`. Un acuerdo no confirma; el segundo igual sí; un código distinto reinicia. `wideEnough` acepta ~30 % del ancho y rechaza una mancha bajo el 12 % | Unitaria del lector | `tests/camera.test.ts` |
 | Lectura con una cámara física y la luz del flash | Manual en el teléfono | No automatizada. Ver riesgos |
 
 Comando: `npm test` en la raíz de este repositorio.

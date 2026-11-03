@@ -134,7 +134,7 @@ export function startApp(root: HTMLElement, repository: InventoryRepository = cr
           }
           const status = root.querySelector("#scan-status");
           if (status) {
-            status.textContent = `${hit.formatLabel} leído. Confirma para agregarlo al estante.`;
+            status.textContent = `${hit.formatLabel} confirmado. Revisa el número antes de usarlo.`;
           }
           const panel = root.querySelector("#scan-panel");
           panel?.replaceChildren(
@@ -146,7 +146,7 @@ export function startApp(root: HTMLElement, repository: InventoryRepository = cr
                 next.resume();
                 panel.replaceChildren();
                 if (status) {
-                  status.textContent = "Apunta la cámara trasera al código de barras.";
+                  status.textContent = "Centra el código y mantenlo quieto un momento.";
                 }
               },
             ),
@@ -159,6 +159,12 @@ export function startApp(root: HTMLElement, repository: InventoryRepository = cr
           model.view = { name: "scan", phase: "failed", failure };
           paint();
         },
+        () => {
+          const status = root.querySelector("#scan-status");
+          if (status && !root.querySelector(".hit")) {
+            status.textContent = "Lo estoy confirmando. No muevas el teléfono.";
+          }
+        },
       );
       if (token !== scanToken || model.view.name !== "scan") {
         next.stop();
@@ -168,7 +174,7 @@ export function startApp(root: HTMLElement, repository: InventoryRepository = cr
       model.view = { name: "scan", phase: "live", failure: null };
       const status = root.querySelector("#scan-status");
       if (status) {
-        status.textContent = "Apunta la cámara trasera al código de barras.";
+        status.textContent = "Centra el código y mantenlo quieto un momento.";
       }
     } catch {
       if (token !== scanToken) {
@@ -195,7 +201,7 @@ export function startApp(root: HTMLElement, repository: InventoryRepository = cr
     if (duplicate && duplicate.id !== id) {
       if (model.view.name === "form") {
         model.view.form.draft = draft;
-        model.view.form.errors = { barcode: "Ese código ya está en el estante. Ábrelo desde la lista." };
+        model.view.form.errors = { barcode: "Ese código ya está en la lista. Ábrelo desde el inicio." };
         paint();
       }
       return;

@@ -7,10 +7,10 @@ flowchart TD
   manual[Escribir código]
   ficha[Ficha]
   cats[Categorías]
-  estante -->|botón amarillo| cam
+  estante -->|botón verde| cam
   estante -->|enlace secundario| manual
   estante --> cats
-  estante -->|tiquete| ficha
+  estante -->|tarjeta| ficha
   cam -->|código confirmado| ficha
   cam -->|respaldo| manual
   manual --> ficha

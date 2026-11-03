@@ -7,7 +7,7 @@ import { el } from "./dom";
 import { formatPrice, formatQuantity } from "./format";
 
 function brand(): HTMLElement {
-  return el("p", { class: "brand", text: "Código de bodega" });
+  return el("p", { class: "brand", text: "En este teléfono" });
 }
 
 export function loadingView(): HTMLElement {
@@ -33,7 +33,7 @@ export function listView(input: {
   const count = input.products.length;
   const summary =
     count === 0
-      ? "Todavía no hay productos en el estante."
+      ? "Todavía no hay productos."
       : count === 1
         ? "1 producto listo para exportar."
         : `${count} productos listos para exportar.`;
@@ -52,10 +52,10 @@ export function listView(input: {
   if (count === 0) {
     list.append(
       el("article", { class: "empty-shelf" }, [
-        el("p", { class: "empty-kicker", text: "Estante vacío" }),
+        el("p", { class: "empty-kicker", text: "Sin productos" }),
         el("h2", { text: "Escanea el primer código" }),
         el("p", {
-          text: "Usa la cámara trasera del teléfono. Si el código no se lee, escríbelo a mano. Nada se envía a un servidor.",
+          text: "Apunta con la cámara de atrás. Si no se lee, escríbelo. Todo queda en este teléfono.",
         }),
       ]),
     );
@@ -99,7 +99,7 @@ export function listView(input: {
   categories.addEventListener("click", input.onCategories);
 
   const dock = el("footer", { class: "dock" }, [
-    el("p", { class: "dock-note", text: "Cámara trasera del teléfono" }),
+    el("p", { class: "dock-note", text: "La cámara de atrás lee el código" }),
     scan,
     el("div", { class: "dock-links" }, [manual, exportButton, categories]),
   ]);
@@ -157,7 +157,7 @@ export function scanView(input: {
     input.phase === "failed"
       ? "La cámara no está disponible."
       : input.phase === "live"
-        ? "Apunta la cámara trasera al código de barras."
+        ? "Centra el código y mantenlo quieto un momento."
         : "Pidiendo permiso para la cámara trasera…";
 
   const video = el("video", {
@@ -213,7 +213,7 @@ export function detectedCard(barcode: string, formatLabel: string, onUse: () => 
   return el("article", { class: "hit" }, [
     el("p", { class: "empty-kicker", text: formatLabel }),
     el("h2", { class: "barcode hit-code", text: barcode }),
-    el("p", { text: "El código queda en el teléfono. No se abre ninguna página, aunque el QR sea un enlace." }),
+    el("p", { text: "Comprueba que sea el mismo número del empaque. Queda en el teléfono y, si es un QR, no abre ninguna página." }),
     use,
     resume,
   ]);
@@ -328,7 +328,7 @@ export function formView(input: {
     el("label", { attrs: { for: "notes" }, text: "Notas" }),
     notes,
     el("p", { class: "field-error", text: input.errors.notes ?? "", attrs: { id: "err-notes", role: "alert" } }),
-    el("button", { class: "ink-btn", text: "Guardar en el estante", attrs: { type: "submit" } }),
+    el("button", { class: "ink-btn", text: "Guardar producto", attrs: { type: "submit" } }),
   );
 
   form.addEventListener("submit", (event) => {
@@ -345,7 +345,7 @@ export function formView(input: {
     });
   });
 
-  const back = el("button", { class: "ghost", text: "Volver al estante", attrs: { type: "button" } });
+  const back = el("button", { class: "ghost", text: "Volver", attrs: { type: "button" } });
   back.addEventListener("click", input.onClose);
 
   const screen = el("section", { class: "screen paper" }, [
@@ -361,7 +361,7 @@ export function formView(input: {
       confirm.addEventListener("click", input.onDelete);
       screen.append(confirm);
     } else {
-      const ask = el("button", { class: "ghost dark", text: "Quitar del estante", attrs: { type: "button" } });
+      const ask = el("button", { class: "ghost dark", text: "Eliminar producto", attrs: { type: "button" } });
       ask.addEventListener("click", input.onAskDelete);
       screen.append(ask);
     }
@@ -404,7 +404,7 @@ export function categoriesView(input: {
   onDelete: (id: string) => void;
   onCreate: (name: string) => void;
 }): HTMLElement {
-  const back = el("button", { class: "ghost", text: "Volver al estante", attrs: { type: "button" } });
+  const back = el("button", { class: "ghost", text: "Volver", attrs: { type: "button" } });
   back.addEventListener("click", input.onClose);
 
   const list = el("div", { class: "category-list" });

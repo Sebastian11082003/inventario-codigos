@@ -1,17 +1,17 @@
 # Sistema de diseño
 
-Piezas que obedecen el ADN. Si una pieza nueva necesita radio grande, gradiente o un segundo amarillo, no entra.
+Piezas del ADN actual. Una sombra dura, un radio cero o una serifa de cartel no entran.
 
 | Pieza | Regla |
 |---|---|
-| Cabecera | Fondo noche, marca en mono amarillo, título Fraunces |
-| Tiquete | Papel, borde tinta, perforación a la izquierda, sombra dura |
-| Sello | Verde sobre verde claro, mono, ligera rotación |
-| Disparador | Amarillo, alto mínimo 64 px, único uso: abrir la cámara trasera |
-| Enlaces de pie | Texto sobre noche. Exportar se desactiva si el estante está vacío |
-| Ficha | Renglones subrayados, sin cajas |
-| Error | Arcilla, texto en español, junto al campo |
-| Visor | Video a sangre, cuatro esquinas amarillas, estado en vivo |
-| Botón de guardar | Noche con texto amarillo. No es el disparador |
+| Cabecera | Fondo blanco, pastilla verde «En este teléfono», título Manrope |
+| Tarjeta | Superficie blanca, radio 20 px, borde claro, sombra suave |
+| Categoría | Pastilla verde suave, sin rotación |
+| Escanear | Botón verde, alto mínimo 56 px, texto blanco |
+| Acciones de pie | Tres botones claros. Exportar se desactiva si la lista está vacía |
+| Ficha | Campos con fondo suave y radio 14 px |
+| Error | Rojo, texto en español, junto al campo |
+| Visor | Video a sangre, esquinas blancas, estado en una pastilla oscura |
+| Guardar | El mismo verde. No compite con un segundo color de marca |
 
-Contraste: tinta sobre papel y amarillo sobre noche superan un uso de texto corrido. El foco visible es un anillo amarillo. Hay respeto a `prefers-reduced-motion`.
+Contraste: tinta sobre blanco y blanco sobre verde sirven para texto. El foco visible es un anillo verde. Se respeta `prefers-reduced-motion`.

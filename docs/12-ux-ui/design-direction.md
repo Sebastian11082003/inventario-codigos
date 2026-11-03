@@ -2,18 +2,18 @@
 
 ## Producto
 
-- **Qué es:** una libreta de bodega para capturar códigos con el teléfono.
-- **Qué debe hacer:** abrir la cámara trasera, fichar el producto y sacar un Excel.
-- **Industria:** inventario de tienda pequeña y mostrador, no un ERP.
-- **Personalidad:** directa, de papel y tinta, usable con una mano y con luz de pasillo.
-- **Objetivo del usuario:** no perder un código y irse con el archivo.
-- **Objetivo de negocio:** un Excel que el POS pueda mapear.
-- **Contenido real:** códigos, nombres, cuatro categorías semilla, cantidades y un precio que a veces no existe.
-- **Dispositivo:** teléfono en vertical. En escritorio la libreta se queda angosta, no se convierte en tablero.
+- **Qué es:** una herramienta de teléfono para anotar códigos y llevárselos en Excel.
+- **Qué debe hacer:** abrir la cámara trasera, confirmar el número y guardar una ficha corta.
+- **Industria:** tienda pequeña y mostrador. Se usa de pie, con una mano y con prisa.
+- **Personalidad:** clara, actual y amable. No es un talonario ni un tablero de empresa.
+- **Objetivo del usuario:** leer el código correcto y no perder la lista.
+- **Objetivo de negocio:** un Excel que el punto de venta pueda mapear.
+- **Contenido real:** códigos, nombres, categorías, cantidades y un precio que a veces no existe.
+- **Dispositivo:** teléfono en vertical. En escritorio la misma columna, centrada.
 
 ## Usuario
 
-Quien cuenta la mercancía. Termina cuando el estante está revisado y el archivo descargado.
+Quien cuenta la mercancía. Termina cuando la lista está revisada y el archivo descargado.
 
 ## Referencias
 
@@ -21,57 +21,57 @@ No se copia un sitio. Cada fuente aporta una capa.
 
 ### Mobbin — UX
 
-Captura a pantalla completa con un solo verbo abajo, como el depósito de un cheque o el escáner de un inventario móvil: el pulgar cae en la acción, el permiso denegado explica el arreglo y deja un camino manual. No hay barra de cinco iconos.
+El escáner de un inventario móvil actual: una acción principal abajo, el permiso denegado explica el arreglo y deja escribir el código. La lectura no se acepta al primer fotograma.
 
 ### Godly — identidad
 
-Contraste de una serifa de mostrador (Fraunces) contra una sans legible (Atkinson Hyperlegible) y un mono para el código (IBM Plex Mono). Sombra dura de imprenta, no desenfoque. El amarillo de la pistola de precios aparece solo en el disparador.
+Sans contemporánea (Manrope), superficies blancas, un verde de acción y sombra suave. El mono solo se usa para el número del código, no para decorar títulos.
 
 ### Web Anatomy — composición
 
 | Sección | Composición | Jerarquía | Ancla | Responsive |
 |---|---|---|---|---|
-| Estante | Cabecera nocturna y tiquetes perforados, no grilla de tarjetas | El nombre del producto | El tiquete | Una columna, también en escritorio |
-| Cámara | Video a sangre con cuatro esquinas | La frase de apuntar | El visor | Ocupa el alto del teléfono |
-| Ficha | Renglones de libreta, sin caja flotante | El código ya leído | El campo nombre | Una columna, cantidad y unidad en pareja |
-| Categorías | Lista de sellos editables | El nombre | El sello verde | Una columna |
+| Lista | Cabecera clara y tarjetas con el nombre grande | El nombre | La tarjeta | Una columna |
+| Cámara | Video a sangre y recuadro blanco | La frase de mantener quieto | El recuadro | Alto del teléfono |
+| Ficha | Campos con fondo suave y un botón de guardar | El código ya leído | El nombre | Una columna |
+| Categorías | Filas editables | El nombre | Guardar | Una columna |
 
 ### Land-book — narrativa
 
-Una frase de bodega, un conteo y un solo botón amarillo. El Excel y las categorías están en texto, debajo, para no competir con el escaneo.
+Una frase corta, el conteo y un solo botón verde. Exportar y las categorías quedan al lado, sin competir con el escaneo.
 
 ### Google Stitch — exploración
 
 | Dirección | Idea | Encaje |
 |---|---|---|
-| A — mínima / editorial | Lista blanca, mucha letra, poco color | Clara, pero parece una nota, no una herramienta de pasillo |
-| B — expresiva | Mercado nocturno, color por categoría, ilustración | Memorable y más lenta de leer con prisa |
-| C — centrada en el producto | Visor de pistola y tiquete de estante | Es el trabajo real: apuntar, confirmar, contar |
+| A — mínima / editorial | Lista blanca, poca decoración | Clara y fácil de leer con prisa |
+| B — expresiva | Talonario, sombra dura, serifa de mostrador | Se reconoce, pero se ve de otra década |
+| C — centrada en el producto | Recuadro de cámara y ficha corta | Es el trabajo: apuntar, confirmar, contar |
 
-**Elegida:** C, con la cabecera nocturna de B y la lista en papel de A.
+**Elegida:** A con el recuadro de C. El verde solo marca la acción principal.
 
-**Por qué no la convencional:** un tablero blanco con tarjetas redondas y un botón azul no dice “bodega” si se le quita el título.
+**Por qué no B:** el talonario perforado, el sello girado y la sombra de imprenta se sienten viejos para alguien que usa el teléfono todos los días.
 
 ## Design DNA
 
 ```yaml
 design_dna:
-  visual_direction: libreta de bodega con visor de pistola de precios
-  typography: Fraunces en títulos y cantidades; Atkinson Hyperlegible en texto; IBM Plex Mono en códigos
-  colors: noche #1d1814, papel #f4ecdf, disparador #ffd23f, sello #1e5c45, error #9c341f
-  layout: una columna; en escritorio la columna sigue angosta sobre un fondo de montantes
-  spacing: 8 px de base; aire de 16–18 px en los bordes; safe-area en el pie
-  radius: 0
-  shadows: desplazamiento duro 4 px, sin blur
-  imagery: ninguna ilustración de stock; el video de la cámara es la imagen
-  icons: esquinas del visor y perforación del tiquete, no un set genérico
-  motion: el botón de escanear se hunde al pulsar; sin animación decorativa
-  density: táctil, cómoda, campos a 16 px para que iOS no haga zoom
+  visual_direction: lista clara de teléfono, con un recuadro de cámara
+  typography: Manrope en interfaz; IBM Plex Mono solo en el número del código
+  colors: lienzo #eef3f6, superficie #ffffff, tinta #14202b, acción #0c8f78, error #c2413b
+  layout: una columna; en escritorio sigue angosta y centrada
+  spacing: 8 px de base; 16–20 px en los bordes; safe-area en el pie
+  radius: 14–22 px en tarjetas y botones
+  shadows: sombra suave y baja, nunca desplazamiento duro
+  imagery: ninguna ilustración; el video de la cámara es la imagen
+  icons: recuadro de cuatro esquinas blancas
+  motion: el botón principal se hunde al pulsar; sin adorno
+  density: táctil, campos a 16 px para que iOS no haga zoom
 ```
 
 ## Qué hace único este diseño
 
-Sin el nombre, se reconoce por el tiquete perforado, el sello de categoría girado y el único bloque amarillo que pide la cámara trasera. No es un dashboard de tres columnas ni una landing.
+Sin el nombre, se reconoce por el botón verde de escanear, la lista de productos con cantidad a un toque y el recuadro que pide mantener el código quieto. No es un tablero de tres columnas.
 
 ## Evaluación
 
@@ -79,15 +79,17 @@ Sin el nombre, se reconoce por el tiquete perforado, el sello de categoría gira
 evaluation:
   UX_quality: 8
   visual_identity: 8
-  originality: 8
+  originality: 7
   hierarchy: 8
   responsiveness: 9
   accessibility: 8
   product_fit: 9
+  contemporary: 9
+  friendliness: 9
 ```
 
-Originalidad por encima de 7 y encaje por encima de 8. La pregunta del logo se responde que no: la perforación, el visor y el amarillo único no sirven para otro producto genérico.
+La dirección anterior (libreta y pistola de precios) tenía originalidad alta y se veía obsoleta. Esta prioriza que se sienta actual y fácil, sin volver a un tablero genérico.
 
 ## Implementación
 
-La interfaz de `src/ui` y `src/styles.css` usa estos tokens. El amarillo no se reutiliza en guardar ni en exportar.
+`src/styles.css` y `src/ui` usan estos tokens. El verde es la acción principal: escanear y guardar.

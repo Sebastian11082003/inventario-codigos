@@ -356,6 +356,11 @@ h2 {
   box-shadow: 0 4px 10px rgba(42, 22, 18, 0.06);
 }
 
+.qty .step:disabled {
+  opacity: 0.35;
+  box-shadow: none;
+}
+
 .dock {
   flex: none;
   padding: 8px 16px calc(14px + env(safe-area-inset-bottom));
@@ -574,6 +579,11 @@ h2 {
   overflow: hidden;
 }
 
+.scan:has(#scan-panel:not(:empty)) .viewfinder {
+  flex: 0 0 32dvh;
+  min-height: 148px;
+}
+
 .viewfinder video {
   position: absolute;
   inset: 0;
@@ -586,9 +596,9 @@ h2 {
 .reticle {
   pointer-events: none;
   position: absolute;
-  inset: 16% 12%;
+  inset: 30% 6%;
   z-index: 1;
-  box-shadow: 0 0 0 100vmax rgba(20, 10, 8, 0.38);
+  box-shadow: 0 0 0 100vmax rgba(20, 10, 8, 0.55);
 }
 
 .corner {
@@ -605,13 +615,13 @@ h2 {
 
 .beam {
   position: absolute;
-  left: 0;
-  right: 0;
+  left: 4%;
+  right: 4%;
   top: 46%;
-  height: 3px;
+  height: 4px;
   border-radius: 999px;
-  background: linear-gradient(90deg, transparent, #ffb199 18%, #fff 50%, #ffb199 82%, transparent);
-  box-shadow: 0 0 16px rgba(255, 79, 48, 0.85);
+  background: linear-gradient(90deg, transparent, #ffb199 12%, #fff 50%, #ffb199 88%, transparent);
+  box-shadow: 0 0 18px 2px rgba(255, 79, 48, 0.95);
 }
 
 .scan-status {
@@ -636,12 +646,58 @@ h2 {
   border-radius: 24px;
 }
 
+.hit-name {
+  margin: 4px 0 8px;
+  font-family: var(--display);
+  font-size: 1.7rem;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+.hit-meta { margin: 0 0 8px; }
+
 .hit-code {
   margin: 4px 0 8px;
-  font-size: 1.45rem;
+  font-size: 1.15rem;
   color: var(--ink);
   font-weight: 500;
   line-height: 1.25;
+}
+
+.hit-had,
+.recount {
+  margin: 0 0 12px;
+  font-weight: 700;
+}
+
+.recount {
+  margin: 16px 18px 0;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.zero-alert {
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: #ffe4ec;
+  color: #9f1239;
+  font-weight: 700;
+}
+
+.zero-flag {
+  display: block;
+  margin-top: 6px;
+  color: #9f1239;
+  font-weight: 800;
+  font-size: 0.92rem;
+}
+
+.count-form label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 700;
 }
 
 .ink-btn, .danger-btn {
@@ -726,7 +782,8 @@ h2 {
 .ficha select,
 .ficha textarea,
 .category-row input,
-.category-create input {
+.category-create input,
+.count-form input {
   width: 100%;
   min-height: 52px;
   border: 1.5px solid #eadfd8;
@@ -742,7 +799,8 @@ h2 {
 .ficha select:focus,
 .ficha textarea:focus,
 .category-row input:focus,
-.category-create input:focus {
+.category-create input:focus,
+.count-form input:focus {
   border-color: var(--papaya);
 }
 

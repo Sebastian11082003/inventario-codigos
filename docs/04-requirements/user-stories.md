@@ -7,7 +7,7 @@ Origen común: [overview](../01-context/overview.md) y [visión](../03-product/v
 Como operador, quiero apuntar la cámara de atrás del teléfono al código para no transcribirlo.
 
 - Dado un contexto seguro y permiso concedido, cuando pulso **Escanear con la cámara**, entonces la app llama a `getUserMedia` con `facingMode: "environment"` y sin audio.
-- Dado un código leído, cuando pulso **Usar este código**, entonces se abre la ficha con ese texto.
+- Dado un código leído, cuando la hoja lo muestra, entonces el texto queda visible. Si es nuevo, **Completar producto** abre la ficha. Si ya estaba, el conteo se anota sin crear otro producto.
 - Dado un QR con una URL, cuando lo confirmo, entonces el texto queda en el código y el navegador no abre esa URL.
 
 ## HU-02 Respaldo manual
@@ -44,10 +44,20 @@ Como operador, quiero que un refresco no borre el estante.
 Como operador, quiero corregir la lista y descargar el Excel.
 
 - Dado un estante vacío, cuando miro exportar, entonces la acción está deshabilitada.
-- Dado productos guardados, cuando exporto, entonces el archivo trae Código, Nombre, Categoría, Cantidad, Unidad y, después, Precio y Notas. El código va como texto y la unidad como `cantidad`, `kg` o `g`.
+- Dado productos guardados, cuando exporto, entonces el archivo trae Código, Nombre, Categoría, Cantidad, Unidad, Precio, Notas y, al final, Alerta. El código va como texto y la unidad como `cantidad`, `kg` o `g`.
+- Dado un producto con cantidad 0, cuando exporto, entonces Alerta dice `Sin existencias`. Con cantidad mayor que 0, esa celda va vacía.
 
 ## HU-07 Cámara no disponible
 
 Como operador, quiero entender por qué no hay imagen.
 
 - Dado un permiso negado, sin cámara o sin HTTPS, cuando falla la apertura, entonces veo un texto distinto para cada caso y puedo escribir el código.
+
+## HU-08 Conteo contra lo ya guardado
+
+Como operador que vuelve a contar, quiero ver cuántos había y anotar los de ahora sin volver a escribir el nombre.
+
+- Dado un código que ya está en el teléfono, cuando la cámara lo confirma, entonces veo el nombre, la categoría y la cantidad guardada, escribo el conteo (puede ser 0) y, al guardar, la cámara sigue lista para el siguiente.
+- Dado un código nuevo, cuando la cámara lo confirma, entonces no aparece un nombre de internet. Puedo completar la ficha o seguir escaneando.
+- Dado cantidad 1, 0 o 0,4, cuando pulso −, entonces la cantidad no cambia. Dado 1,5, cuando pulso −, entonces queda 0,5.
+- Dado la ficha de un producto ya guardado, cuando escribo 0 y guardo, entonces queda 0 y el Excel avisa `Sin existencias`.

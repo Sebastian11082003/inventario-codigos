@@ -4,6 +4,7 @@ import {
   createCategory,
   deleteCategory,
   renameCategory,
+  categoryName,
   seedCategories,
 } from "./domain/categories";
 import { exportFileName, toExcelMatrix } from "./domain/excel";
@@ -17,7 +18,8 @@ import {
   type FieldErrors,
 } from "./domain/products";
 import { acceptScannedCode } from "./domain/products";
-import type { Category, StoredProduct } from "./domain/types";
+import { unitAmountLabel, type Category, type StoredProduct } from "./domain/types";
+import { formatQuantity } from "./ui/format";
 import { buildXlsx, downloadXlsx } from "./export/xlsx";
 import { IdbInventoryRepository } from "./persistence/idb";
 import { MemoryInventoryRepository } from "./persistence/memory";
@@ -55,6 +57,7 @@ export function startApp(root: HTMLElement, repository: InventoryRepository = cr
   };
   let repo = repository;
   let session: ScanSession | null = null;
+  let quantityWrites = Promise.resolve();
   let releaseScan: Promise<void> = Promise.resolve();
   let scanGate: Promise<void> = Promise.resolve();
   let scanToken = 0;
@@ -167,23 +170,34 @@ export function startApp(root: HTMLElement, repository: InventoryRepository = cr
             return;
           }
           const status = root.querySelector("#scan-status");
+          const existing = findByBarcode(model.products, hit.barcode);
           if (status) {
-            status.textContent = `${hit.formatLabel} confirmado. Revisa el número antes de usarlo.`;
+            status.textContent = existing
+              ? `${existing.name}. Anota el conteo de ahora.`
+              : `${hit.formatLabel} confirmado. Este código es nuevo.`;
           }
           const panel = root.querySelector("#scan-panel");
           panel?.replaceChildren(
-            detectedCard(
-              hit.barcode,
-              hit.formatLabel,
-              () => openBarcode(hit.barcode),
-              () => {
+            detectedCard({
+              barcode: hit.barcode,
+              formatLabel: hit.formatLabel,
+              known: existing
+                ? {
+                    name: existing.name,
+                    category: categoryName(model.categories, existing.categoryId),
+                    had: `En este teléfono había ${formatQuantity(existing.quantity)} ${unitAmountLabel(existing.unit)}.`,
+                  }
+                : null,
+              onSaveCount: (quantity) => saveCount(existing, quantity, token),
+              onOpen: () => openBarcode(hit.barcode),
+              onResume: () => {
                 next.resume();
-                panel.replaceChildren();
+                panel?.replaceChildren();
                 if (status) {
                   status.textContent = "Mantén el código quieto.";
                 }
               },
-            ),
+            }),
           );
         },
         (failure) => {
@@ -265,19 +279,62 @@ export function startApp(root: HTMLElement, repository: InventoryRepository = cr
     showList();
   }
 
+  async function saveCount(product: StoredProduct | undefined, quantity: number, token: number) {
+    if (!product || token !== scanToken || model.view.name !== "scan") {
+      return;
+    }
+    const stored: StoredProduct = {
+      ...product,
+      quantity,
+      updatedAt: new Date().toISOString(),
+    };
+    try {
+      await repo.saveProduct(stored);
+    } catch {
+      persistError();
+    }
+    if (token !== scanToken || model.view.name !== "scan") {
+      const index = model.products.findIndex((item) => item.id === stored.id);
+      if (index === -1) {
+        model.products.push(stored);
+      } else {
+        model.products[index] = stored;
+      }
+      return;
+    }
+    model.products = model.products.map((item) => (item.id === stored.id ? stored : item));
+    const panel = root.querySelector("#scan-panel");
+    panel?.replaceChildren();
+    session?.resume();
+    const status = root.querySelector("#scan-status");
+    if (status) {
+      status.textContent =
+        quantity === 0
+          ? "Guardado. El Excel avisará sin existencias. Apunta al siguiente."
+          : "Conteo guardado. Apunta al siguiente.";
+    }
+  }
+
   async function changeQuantity(id: string, delta: number) {
     const current = model.products.find((product) => product.id === id);
     if (!current) {
       return;
     }
     const next = bumpQuantity(current, delta, new Date().toISOString());
-    try {
-      await repo.saveProduct(next);
-    } catch {
-      persistError();
+    if (next === current) {
+      return;
     }
     model.products = model.products.map((product) => (product.id === id ? next : product));
     paint();
+    const pending = next;
+    quantityWrites = quantityWrites.then(async () => {
+      try {
+        await repo.saveProduct(pending);
+      } catch {
+        persistError();
+        paint();
+      }
+    });
   }
 
   function exportExcel() {
@@ -366,6 +423,9 @@ export function startApp(root: HTMLElement, repository: InventoryRepository = cr
         categories: current.categories,
         confirmDelete: form.confirmDelete,
         showDelete: form.id !== null,
+        previousNote: form.id
+          ? previousNoteFor(model.products.find((item) => item.id === form.id))
+          : null,
         onClose: showList,
         onSubmit: (draft) => {
           void saveProduct(form.id, draft);
@@ -443,6 +503,13 @@ export function startApp(root: HTMLElement, repository: InventoryRepository = cr
   }
 
   void boot();
+}
+
+function previousNoteFor(product: StoredProduct | undefined): string | null {
+  if (!product) {
+    return null;
+  }
+  return `En este teléfono había ${formatQuantity(product.quantity)} ${unitAmountLabel(product.unit)}. Si ahora hay 0, escríbelo: el Excel avisará Sin existencias. El botón − de la lista no baja a cero.`;
 }
 
 function createRepository(): InventoryRepository {

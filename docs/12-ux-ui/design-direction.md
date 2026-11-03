@@ -27,7 +27,8 @@ references:
       - El escáner ocupa el pulgar: el botón de captura está en la cabecera si la lista está vacía y fijo abajo cuando ya hay productos.
       - Si la cámara falla, el texto dice qué pasó y Escribir código sigue disponible.
       - Si el teléfono tiene flash, Flash queda en la barra del visor, al alcance del pulgar y fuera del recuadro.
-      - La cantidad se cambia en la tarjeta, con − y +, sin abrir la ficha.
+      - La cantidad se cambia en la tarjeta, con − y +, sin abrir la ficha. − se apaga antes de llegar a 0.
+      - Al leer un código conocido, una hoja muestra el producto de este teléfono y el conteo nuevo, y la cámara sigue. No es el catálogo de internet de las apps de la tienda.
       - El estado vacío enseña el primer paso en vez de dejar un hueco.
   godly:
     purpose: identidad visual
@@ -68,7 +69,7 @@ Campo papaya, título de display y un botón de tinta. No es una página blanca 
 |---|---|---|---|---|
 | Lista vacía | Cabecera papaya con el botón de escanear y hoja con la marca del código | El título y el botón | La cápsula de tinta | Una columna |
 | Lista con productos | Cabecera corta y tarjetas; el botón pasa al pie | El nombre y la cantidad | La bandeja de cantidad | Una columna, pie fijo |
-| Cámara | Video a sangre, ventana oscura, esquinas papaya y, si hay flash, el control en la barra | La frase de mantener quieto | El recuadro | Alto del teléfono |
+| Cámara | Video a sangre, ventana apaisada, línea papaya y, si hay flash, el control en la barra. Debajo, la hoja del producto o del código nuevo | La línea y, al leer, el nombre o el número | El recuadro | Alto del teléfono |
 | Ficha | Banda papaya con el código y campos blancos | El código ya leído | El nombre | Una columna, se desplaza |
 | Categorías | Tarjeta por categoría | El nombre | Guardar | Una columna |
 

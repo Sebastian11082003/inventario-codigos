@@ -13,7 +13,7 @@ El POS necesita un `.xlsx` real. La librería `xlsx` de npm arrastra avisos de p
 
 ## Decisión
 
-**Decidimos:** armar el xlsx en `src/export/xlsx.ts` (XML de Office Open XML comprimido con `fflate`). El código se escribe como texto. El precio vacío queda como celda de texto vacía. La hoja se llama `inventario`. La primera fila es `Código`, `Nombre`, `Categoría`, `Cantidad`, `Unidad`, `Precio`, `Notas`. La unidad de la celda es `cantidad`, `kg` o `g`.
+**Decidimos:** armar el xlsx en `src/export/xlsx.ts` (XML de Office Open XML comprimido con `fflate`). El código se escribe como texto. El precio vacío queda como celda de texto vacía. La hoja se llama `inventario`. La primera fila era `Código`, `Nombre`, `Categoría`, `Cantidad`, `Unidad`, `Precio`, `Notas`. ADR-007 agrega `Alerta` al final. La unidad de la celda es `cantidad`, `kg` o `g`.
 
 **Justificación:** el archivo que generamos es nuestro. No hace falta un parser de hojas arbitrarias. Se evita publicar en el teléfono una librería con avisos altos.
 
@@ -26,4 +26,4 @@ El POS necesita un `.xlsx` real. La librería `xlsx` de npm arrastra avisos de p
 
 ## Consecuencias
 
-El escritor cubre esta hoja y estas siete columnas. No es un Excel genérico. La prueba abre el zip y lee la primera fila.
+El escritor cubre esta hoja. No es un Excel genérico. La prueba abre el zip y lee la primera fila. Desde ADR-007 son ocho columnas: las siete de esta decisión más `Alerta`.

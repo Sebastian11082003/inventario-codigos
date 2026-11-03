@@ -18,10 +18,17 @@ sequenceDiagram
     else Stream listo
       Cam-->>Dec: Video
       Dec-->>UI: Texto del código, al segundo acuerdo
-      Op->>UI: Usar este código
-      UI-->>Op: Ficha
-      Op->>UI: Guardar
-      UI->>DB: Producto
+      alt El código ya está en el teléfono
+        UI-->>Op: Nombre, categoría y cantidad guardada
+        Op->>UI: Conteo de ahora, incluso 0
+        UI->>DB: Actualiza la cantidad
+        UI-->>Op: La cámara sigue abierta
+      else Código nuevo
+        Op->>UI: Completar producto
+        UI-->>Op: Ficha
+        Op->>UI: Guardar
+        UI->>DB: Producto
+      end
     end
   end
 ```

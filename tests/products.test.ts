@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { seedCategories } from "../src/domain/categories";
-import { acceptScannedCode, draftFromProduct, emptyDraft, findByBarcode, validateDraft } from "../src/domain/products";
+import {
+  acceptScannedCode,
+  bumpQuantity,
+  canDecrease,
+  draftFromProduct,
+  emptyDraft,
+  findByBarcode,
+  readQuantity,
+  validateDraft,
+} from "../src/domain/products";
 import { normalizeUnit, unitAmountLabel, type StoredProduct } from "../src/domain/types";
 
 const categories = seedCategories();
@@ -114,5 +123,25 @@ describe("productos", () => {
 
   it("encuentra un código ya guardado ignorando espacios de los extremos", () => {
     expect(findByBarcode([product()], " 7701234567890 ")?.id).toBe("p1");
+  });
+
+  it("el botón − no deja la cantidad en 0; la ficha sí acepta un conteo de 0", () => {
+    const one = product({ quantity: 1 });
+    expect(canDecrease(1)).toBe(false);
+    expect(canDecrease(0)).toBe(false);
+    expect(canDecrease(0.4)).toBe(false);
+    expect(bumpQuantity(one, -1, "2026-11-03T01:00:00.000Z")).toBe(one);
+    const tiny = product({ quantity: 0.4 });
+    expect(bumpQuantity(tiny, -1, "2026-11-03T01:00:00.000Z")).toBe(tiny);
+    expect(canDecrease(1.5)).toBe(true);
+    expect(bumpQuantity(product({ quantity: 1.5 }), -1, "2026-11-03T01:00:00.000Z").quantity).toBe(0.5);
+    expect(bumpQuantity(product({ quantity: 0 }), 1, "2026-11-03T01:00:00.000Z").quantity).toBe(1);
+    const counted = validateDraft(
+      { ...emptyDraft("500", categories), name: "Sal", quantity: "0" },
+      categories,
+    );
+    expect(counted.ok && counted.value.quantity).toBe(0);
+    expect(readQuantity("0,000")).toBe(0);
+    expect(readQuantity("")).toBeNull();
   });
 });

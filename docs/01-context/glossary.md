@@ -17,3 +17,6 @@
 | facingMode environment | Pista de `getUserMedia` que pide la cámara trasera |
 | Contexto seguro | HTTPS o `localhost`. Sin eso el teléfono no entrega la cámara |
 | Estante | La lista de productos ya guardados, antes de exportar |
+| Conteo | La cantidad que el operador anota ahora, contrastada con la que ya estaba en el teléfono |
+| Alerta | Columna del Excel. Dice `Sin existencias` solo cuando el conteo guardado es 0 |
+| Visor | La cámara a sangre, con una ventana apaisada y una línea papaya. La línea guía; la lectura usa el fotograma completo |

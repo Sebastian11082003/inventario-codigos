@@ -1,7 +1,7 @@
 import { strFromU8, unzipSync } from "fflate";
 import { describe, expect, it } from "vitest";
 import { seedCategories } from "../src/domain/categories";
-import { exportFileName, toExcelMatrix, toExcelRow } from "../src/domain/excel";
+import { exportFileName, stockAlert, toExcelMatrix, toExcelRow, ZERO_STOCK_ALERT } from "../src/domain/excel";
 import { EXCEL_COLUMNS, EXCEL_HEADERS, type StoredProduct } from "../src/domain/types";
 import { buildXlsx } from "../src/export/xlsx";
 
@@ -55,6 +55,7 @@ describe("excel para el POS", () => {
       unidad: "kg",
       precio: 3200,
       notas: "",
+      alerta: "",
     });
     expect(toExcelRow(products[0], categories).unidad).toBe("cantidad");
     expect(toExcelRow(products[0], categories).precio).toBe("");
@@ -98,5 +99,19 @@ describe("excel para el POS", () => {
     expect(workbook).toContain('name="inventario"');
     expect(xml).toContain("<v>3200</v>");
     expect(exportFileName(new Date("2026-11-03T12:00:00"))).toBe("inventario-codigos-2026-11-03.xlsx");
+  });
+
+  it("avisa Sin existencias solo cuando el conteo guardado es 0", () => {
+    expect(stockAlert(0)).toBe(ZERO_STOCK_ALERT);
+    expect(stockAlert(0.5)).toBe("");
+    const empty = toExcelRow({ ...products[1], quantity: 0 }, categories);
+    expect(empty.alerta).toBe("Sin existencias");
+    expect(empty.cantidad).toBe(0);
+    const matrix = toExcelMatrix([{ ...products[1], quantity: 0 }], categories);
+    expect(matrix[0].at(-1)).toBe("Alerta");
+    expect(matrix[1].at(-1)).toBe("Sin existencias");
+    const bytes = buildXlsx(matrix);
+    const xml = strFromU8(unzipSync(bytes)["xl/worksheets/sheet1.xml"]);
+    expect(xml).toContain(">Sin existencias<");
   });
 });

@@ -6,6 +6,7 @@ export const EXCEL_COLUMNS = [
   "unidad",
   "precio",
   "notas",
+  "alerta",
 ] as const;
 
 export type ExcelColumn = (typeof EXCEL_COLUMNS)[number];
@@ -18,6 +19,7 @@ export const EXCEL_HEADERS = [
   "Unidad",
   "Precio",
   "Notas",
+  "Alerta",
 ] as const;
 
 export type Category = {

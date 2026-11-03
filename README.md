@@ -23,7 +23,7 @@ Otros comandos: `npm run build` genera `dist/`. `npm run preview` sirve esa carp
 1. Abre la URL `https://` en Chrome o Safari.
 2. Pulsa **Escanear con la cámara**. Ese es el flujo principal. La app llama a `getUserMedia` con `facingMode: "environment"` (cámara trasera).
 3. Cuando el navegador pregunte, permite la cámara.
-4. Apunta al código. Cuando lo lea, pulsa **Usar este código**, completa la ficha y guarda.
+4. Apunta al código dentro de la ventana. Si ya estaba, ves cuántos había, escribes el conteo y sigues con la cámara abierta. Si es nuevo, completas la ficha: el nombre no se busca en internet.
 5. **Escribir código** solo es el respaldo si la cámara falla, no hay permiso o la página no es segura.
 6. Ajusta cantidades o fichas en la lista y pulsa **Exportar Excel**.
 
@@ -42,6 +42,7 @@ Hoja `inventario`. La primera fila está congelada. El orden de columnas es fijo
 | Unidad | `cantidad`, `kg` o `g` |
 | Precio | Precio unitario. Celda vacía si no se indicó |
 | Notas | Texto libre. Puede ir vacío |
+| Alerta | `Sin existencias` si la cantidad es 0. Vacía si hay existencias. El botón − de la lista no puede dejar el producto en 0 |
 
 El archivo se llama `inventario-codigos-AAAA-MM-DD.xlsx` y va ordenado por nombre. En pantalla, la lista muestra primero lo que se editó más reciente para poder corregirlo antes de exportar.
 

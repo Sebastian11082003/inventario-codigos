@@ -18,6 +18,8 @@ Clave `id`. Índice único `barcode`.
 | notes | string | Puede ir vacía |
 | updatedAt | string | ISO-8601 |
 
+`Alerta` no es un campo. Si `quantity` es 0, el Excel escribe `Sin existencias` en esa columna. El botón − no escribe 0: solo el conteo o la ficha.
+
 ## categories
 
 Clave `id`. Campos `id` y `name`.

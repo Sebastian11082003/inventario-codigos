@@ -9,6 +9,7 @@
 | R5 | GitHub Pages no es gratis en un repo privado | Media | Medio | Mitigado | Cloudflare Pages Free documentado, sin tarjeta |
 | R6 | Avisos de npm en Vitest (dependencia de desarrollo) | Media | Bajo en producción | Aceptado | No están en `dist/`. No se aplicó `audit fix --force` |
 | R7 | Dos pestañas pueden pisarse al guardar | Baja | Bajo | Abierto | v1 asume un operador y una pestaña |
+| R8 | Quien usó una app de la tienda espera que el código traiga el nombre del producto | Media | Medio | Aceptado | ADR-007. La hoja del visor dice que el nombre no se busca en internet |
 
 Clasificación de seguridad del incremento: **baja**. No hay tenant, token ni secreto. La entrada se valida. El QR no se navega. Evidencia en `tests/products.test.ts`.
 

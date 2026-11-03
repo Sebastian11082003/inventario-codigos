@@ -45,7 +45,7 @@ export function findByBarcode(
   return products.find((product) => normalizeBarcode(product.barcode) === key);
 }
 
-function parseQuantity(raw: string): number | null {
+export function readQuantity(raw: string): number | null {
   const cleaned = raw.trim().replace(/\s/g, "").replace(",", ".");
   if (!cleaned) {
     return null;
@@ -83,7 +83,7 @@ export function validateDraft(
   const barcode = normalizeBarcode(input.barcode);
   const name = input.name.trim().replace(/\s+/g, " ");
   const notes = input.notes.trim();
-  const quantity = parseQuantity(input.quantity);
+  const quantity = readQuantity(input.quantity);
   const price = parsePrice(input.price);
 
   if (!barcode) {
@@ -165,11 +165,26 @@ export function emptyDraft(barcode: string, categories: readonly Category[]): Dr
   };
 }
 
+function nextSteppedQuantity(quantity: number, delta: number): number | null {
+  const next = Math.round((quantity + delta) * 1000) / 1000;
+  if (!Number.isFinite(next) || next <= 0) {
+    return null;
+  }
+  return next;
+}
+
+export function canDecrease(quantity: number): boolean {
+  return nextSteppedQuantity(quantity, -1) !== null;
+}
+
 export function bumpQuantity(product: StoredProduct, delta: number, updatedAt: string): StoredProduct {
-  const next = Math.round((product.quantity + delta) * 1000) / 1000;
+  const next = nextSteppedQuantity(product.quantity, delta);
+  if (next === null) {
+    return product;
+  }
   return {
     ...product,
-    quantity: next < 0 ? 0 : next,
+    quantity: next,
     updatedAt,
   };
 }

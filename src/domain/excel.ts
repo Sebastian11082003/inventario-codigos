@@ -8,6 +8,12 @@ import {
   type StoredProduct,
 } from "./types";
 
+export const ZERO_STOCK_ALERT = "Sin existencias";
+
+export function stockAlert(quantity: number): string {
+  return quantity === 0 ? ZERO_STOCK_ALERT : "";
+}
+
 export function toExcelRow(product: StoredProduct, categories: readonly Category[]): ExcelRow {
   return {
     codigo_barras: product.barcode,
@@ -17,6 +23,7 @@ export function toExcelRow(product: StoredProduct, categories: readonly Category
     unidad: normalizeUnit(product.unit),
     precio: product.price === null ? "" : product.price,
     notas: product.notes,
+    alerta: stockAlert(product.quantity),
   };
 }
 

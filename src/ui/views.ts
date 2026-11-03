@@ -1,5 +1,6 @@
 import { categoryName } from "../domain/categories";
-import { describeProduct } from "../domain/products";
+import { ZERO_STOCK_ALERT } from "../domain/excel";
+import { canDecrease, describeProduct, readQuantity } from "../domain/products";
 import { UNITS, normalizeUnit, unitAmountLabel, unitOptionLabel, type Category, type StoredProduct } from "../domain/types";
 import type { DraftInput, FieldErrors } from "../domain/products";
 import { CAMERA_FAILURE_COPY, type CameraFailure } from "../camera/errors";
@@ -220,6 +221,9 @@ function ticket(
   if (product.price !== null) {
     open.append(el("span", { class: "ticket-meta", text: formatPrice(product.price) }));
   }
+  if (product.quantity === 0) {
+    open.append(el("span", { class: "zero-flag", text: ZERO_STOCK_ALERT }));
+  }
   open.addEventListener("click", () => onEdit(product.id));
 
   const minus = el("button", {
@@ -227,6 +231,9 @@ function ticket(
     text: "−",
     attrs: { type: "button", "aria-label": `Disminuir cantidad de ${product.name}` },
   });
+  if (!canDecrease(product.quantity)) {
+    minus.disabled = true;
+  }
   const plus = el("button", {
     class: "step",
     text: "+",
@@ -340,18 +347,108 @@ export function scanView(input: {
   ]);
 }
 
-export function detectedCard(barcode: string, formatLabel: string, onUse: () => void, onResume: () => void): HTMLElement {
-  const use = el("button", { class: "ink-btn use-code", text: "Usar este código", attrs: { type: "button" } });
-  const resume = el("button", { class: "ghost", text: "Seguir escaneando", attrs: { type: "button" } });
-  use.addEventListener("click", onUse);
-  resume.addEventListener("click", onResume);
-  return el("article", { class: "hit" }, [
-    el("p", { class: "empty-kicker", text: formatLabel }),
-    el("h2", { class: "barcode hit-code", text: barcode }),
-    el("p", { text: "Comprueba que sea el mismo número del empaque. Queda en el teléfono y, si es un QR, no abre ninguna página." }),
-    use,
-    resume,
+export type KnownHit = {
+  name: string;
+  category: string;
+  had: string;
+};
+
+export function detectedCard(input: {
+  barcode: string;
+  formatLabel: string;
+  known: KnownHit | null;
+  onSaveCount: (quantity: number) => void | Promise<void>;
+  onOpen: () => void;
+  onResume: () => void;
+}): HTMLElement {
+  const resume = el("button", { class: "ghost", text: "Seguir sin guardar", attrs: { type: "button" } });
+  resume.addEventListener("click", input.onResume);
+  const open = el("button", {
+    class: "ghost",
+    text: input.known ? "Corregir nombre o categoría" : "Completar producto",
+    attrs: { type: "button" },
+  });
+  open.addEventListener("click", input.onOpen);
+
+  const card = el("article", { class: "hit" }, [
+    el("p", { class: "empty-kicker", text: input.formatLabel }),
   ]);
+
+  if (!input.known) {
+    card.append(
+      el("h2", { class: "barcode hit-code", text: input.barcode }),
+      el("p", {
+        text: "Este código no está en el inventario. El nombre lo escribes tú: no se busca en internet. Queda en este teléfono y, si es un QR, no abre ninguna página.",
+      }),
+      open,
+      resume,
+    );
+    open.className = "ink-btn use-code";
+    resume.textContent = "Seguir escaneando";
+    return card;
+  }
+
+  const field = el("input", {
+    attrs: {
+      id: "count-now",
+      name: "count",
+      inputmode: "decimal",
+      autocomplete: "off",
+      enterkeyhint: "done",
+      "aria-describedby": "count-error count-alert",
+    },
+  });
+  const error = el("p", { class: "field-error", text: "", attrs: { id: "count-error", role: "alert" } });
+  const alert = el("p", {
+    class: "zero-alert is-hidden",
+    text: `Hay 0. El Excel avisará ${ZERO_STOCK_ALERT}.`,
+    attrs: { id: "count-alert", role: "status" },
+  });
+  const paintAlert = () => {
+    const value = readQuantity(field.value);
+    alert.classList.toggle("is-hidden", value !== 0);
+  };
+  field.addEventListener("input", paintAlert);
+
+  const save = el("button", { class: "ink-btn use-code", text: "Guardar conteo y seguir", attrs: { type: "submit" } });
+  const form = el("form", { class: "count-form" });
+  form.append(
+    el("label", { attrs: { for: "count-now" }, text: "Conteo de ahora" }),
+    field,
+    error,
+    alert,
+    save,
+  );
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const quantity = readQuantity(field.value);
+    if (quantity === null) {
+      error.textContent = "Escribe el conteo. Si no hay, escribe 0.";
+      field.setAttribute("aria-invalid", "true");
+      field.focus();
+      return;
+    }
+    error.textContent = "";
+    field.removeAttribute("aria-invalid");
+    save.disabled = true;
+    void Promise.resolve(input.onSaveCount(quantity)).finally(() => {
+      save.disabled = false;
+    });
+  });
+
+  card.append(
+    el("h2", { class: "hit-name", text: input.known.name }),
+    el("p", { class: "hit-meta" }, [
+      el("span", { class: `stamp ${toneFor(input.known.category)}`, text: input.known.category }),
+    ]),
+    el("p", { class: "barcode hit-code", text: input.barcode }),
+    el("p", { class: "hit-had", text: input.known.had }),
+    form,
+    open,
+    resume,
+  );
+  queueMicrotask(() => field.focus());
+  return card;
 }
 
 export function manualView(input: {
@@ -411,6 +508,7 @@ export function formView(input: {
   categories: readonly Category[];
   confirmDelete: boolean;
   showDelete: boolean;
+  previousNote: string | null;
   onClose: () => void;
   onSubmit: (draft: DraftInput) => void;
   onDelete: () => void;
@@ -451,6 +549,19 @@ export function formView(input: {
     category.setAttribute("aria-invalid", "true");
   }
 
+  const zero = el("p", {
+    class: "zero-alert is-hidden",
+    attrs: { id: "zero-alert", role: "status" },
+  });
+  const paintZero = () => {
+    const value = readQuantity(quantity.input.value);
+    const empty = value !== 0;
+    zero.textContent = empty ? "" : `Hay 0. El Excel avisará ${ZERO_STOCK_ALERT}.`;
+    zero.classList.toggle("is-hidden", empty);
+  };
+  quantity.input.addEventListener("input", paintZero);
+  paintZero();
+
   const form = el("form", { class: "ficha" });
   form.append(
     barcode.label,
@@ -463,7 +574,7 @@ export function formView(input: {
     category,
     el("p", { class: "field-error", text: input.errors.categoryId ?? "", attrs: { id: "err-category", role: "alert" } }),
     el("div", { class: "split" }, [
-      el("div", {}, [quantity.label, quantity.input, quantity.error]),
+      el("div", {}, [quantity.label, quantity.input, quantity.error, zero]),
       el("div", {}, [
         el("label", { attrs: { for: "unit" }, text: "Unidad" }),
         unit,
@@ -502,10 +613,14 @@ export function formView(input: {
   const back = el("button", { class: "ghost", text: "Volver", attrs: { type: "button" } });
   back.addEventListener("click", input.onClose);
 
-  const screen = el("section", { class: "screen form-screen" }, [
+  const screenKids: Node[] = [
     colorBand(back, input.title, el("p", { class: "code-chip", text: input.draft.barcode || "Sin código" })),
-    form,
-  ]);
+  ];
+  if (input.previousNote) {
+    screenKids.push(el("p", { class: "recount", text: input.previousNote }));
+  }
+  screenKids.push(form);
+  const screen = el("section", { class: "screen form-screen" }, screenKids);
 
   if (input.showDelete) {
     if (input.confirmDelete) {
